@@ -3,4 +3,5 @@ dist/
 dist.*
 logs/
 
+nbproject/*
 nbproject/private/private.xml
