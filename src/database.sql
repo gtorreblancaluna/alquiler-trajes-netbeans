@@ -1,0 +1,46 @@
+CREATE TABLE customers (
+  id INT(10) NOT NULL AUTO_INCREMENT,
+  email VARCHAR(255) NULL,
+  name VARCHAR(255) NOT NULL,
+  last_name VARCHAR(255) NOT NULL,
+  phone_number1 VARCHAR(255) NOT NULL,
+  phone_number2 VARCHAR(255) NULL,
+  phone_number3 VARCHAR(255) NULL,
+  updated_at TIMESTAMP NULL,
+  created_at TIMESTAMP NULL,
+  enabled TINYINT NOT NULL DEFAULT 1,
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE users (
+  id INT(10) NOT NULL AUTO_INCREMENT,
+  email VARCHAR(255) NULL,
+  password VARCHAR(255) NULL,
+  name VARCHAR(255) NOT NULL,
+  last_name VARCHAR(255) NOT NULL,
+  phone_number VARCHAR(255) NULL,
+  updated_at TIMESTAMP NULL,
+  created_at TIMESTAMP NULL,
+  enabled TINYINT NOT NULL DEFAULT 1,
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE roles (
+  id INT(10) NOT NULL AUTO_INCREMENT,
+  name VARCHAR(255) NULL,
+  enabled TINYINT NOT NULL DEFAULT 1,
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE users_roles (
+  user_id INT(10) DEFAULT NULL,
+  role_id INT(10) DEFAULT NULL,
+  CONSTRAINT fk_roles_user_roles 
+    FOREIGN KEY (role_id) 
+    REFERENCES roles (id) 
+    ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT fk_users_user_roles  
+    FOREIGN KEY (user_id) 
+    REFERENCES users (id) 
+    ON DELETE NO ACTION ON UPDATE NO ACTION
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
