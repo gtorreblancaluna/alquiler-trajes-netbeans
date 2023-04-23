@@ -6,6 +6,10 @@
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
         <class>alquiler.trajes.entity.User</class>
         <class>alquiler.trajes.entity.Role</class>
+        <class>alquiler.trajes.entity.CatalogTypeEvent</class>
+        <class>alquiler.trajes.entity.Payment</class>
+        <class>alquiler.trajes.entity.Event</class>
+        <class>alquiler.trajes.entity.DetailEvent</class>
         <properties>
             <property name="javax.persistence.jdbc.driver" value="com.mysql.jdbc.Driver" />
             <property name="javax.persistence.jdbc.url" value="jdbc:mysql://localhost:3306/alquiler_trajes" />

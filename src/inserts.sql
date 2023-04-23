@@ -6,3 +6,6 @@ INSERT INTO roles (name) VALUES ('Admin');
 INSERT INTO roles (name) VALUES ('Default');
 
 INSERT INTO users_roles (user_id,role_id) VALUES (1,1);
+
+INSERT INTO catalog_type_event (name) VALUES ('Alquiler');
+INSERT INTO catalog_type_event (name) VALUES ('Venta');
