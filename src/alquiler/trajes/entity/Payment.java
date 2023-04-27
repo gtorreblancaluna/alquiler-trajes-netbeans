@@ -39,6 +39,9 @@ public class Payment {
 
     @Column(length = 255)
     private String comment;
+    
+    @Column
+    private Float payment;
 
     @Column(
         nullable = false,

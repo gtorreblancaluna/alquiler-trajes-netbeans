@@ -5,15 +5,12 @@ import alquiler.trajes.entity.Customer;
 import alquiler.trajes.exceptions.BusinessException;
 import alquiler.trajes.exceptions.NoDataFoundException;
 import alquiler.trajes.service.CustomerService;
-import java.util.ArrayList;
+import alquiler.trajes.table.TableFormatCustomers;
+import alquiler.trajes.util.Utility;
 import java.util.List;
 import javax.swing.JOptionPane;
-import javax.swing.SwingConstants;
-import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableModel;
-import javax.swing.table.TableRowSorter;
-import lombok.Getter;
+
 
 public class CustomersForm extends javax.swing.JInternalFrame {
 
@@ -22,9 +19,12 @@ public class CustomersForm extends javax.swing.JInternalFrame {
     
     private final CustomerService customerService;
     private static String idUserToEdit;
+    private final TableFormatCustomers customersTableFormat;
     
     public CustomersForm() {
         initComponents();
+        customersTableFormat = new TableFormatCustomers();
+        Utility.addJtableToPane(719, 451, paneCustomersTable, customersTableFormat);
         this.setClosable(true);
         this.setTitle(ApplicationConstants.TITLE_CUSTOMERS_FORM);
         customerService = CustomerService.getInstance();
@@ -47,10 +47,10 @@ public class CustomersForm extends javax.swing.JInternalFrame {
     
     
     private void fillTable () {
-        formatTable();
+        customersTableFormat.format();
         try {
             List<Customer> customers = customerService.getAll();
-            DefaultTableModel tableModel = (DefaultTableModel) table.getModel();
+            DefaultTableModel tableModel = (DefaultTableModel) customersTableFormat.getModel();
             
             for (Customer customer : customers) {
                 Object fila[] = {
@@ -71,89 +71,6 @@ public class CustomersForm extends javax.swing.JInternalFrame {
         }
     }
     
-    private void formatTable () {
-        
-        // customize column types
-        DefaultTableModel tableModel = new DefaultTableModel(Column.getColumnNames(), 0){
-            @Override
-            public Class getColumnClass(int column) {
-                return Column.values()[column].getClazzType();
-            }
-
-            @Override
-            public boolean isCellEditable (int row, int column) {
-                return Column.values()[column].getIsEditable();
-            }
-
-        };
-        
-        table.setModel(tableModel);
-
-        TableRowSorter<TableModel> ordenarTabla = new TableRowSorter<TableModel>(tableModel); 
-        table.setRowSorter(ordenarTabla);
-
-        DefaultTableCellRenderer centrar = new DefaultTableCellRenderer();
-        centrar.setHorizontalAlignment(SwingConstants.CENTER);
-
-        DefaultTableCellRenderer right = new DefaultTableCellRenderer();
-        right.setHorizontalAlignment(SwingConstants.RIGHT);
-
-
-
-        for (Column column : Column.values()) {
-            table.getColumnModel()
-                    .getColumn(column.getNumber())
-                    .setPreferredWidth(column.getSize());
-        }
-
-
-        table.getColumnModel().getColumn(Column.ID.getNumber()).setMaxWidth(0);
-        table.getColumnModel().getColumn(Column.ID.getNumber()).setMinWidth(0);
-        table.getColumnModel().getColumn(Column.ID.getNumber()).setPreferredWidth(0);
-        
-        try {
-            DefaultTableModel temp = (DefaultTableModel) table.getModel();
-            temp.removeRow(temp.getRowCount() - 1);
-        } catch (ArrayIndexOutOfBoundsException e) {
-            ;
-        }
-        
-    }
-    
-    @Getter
-    private enum Column {
-        
-        ID(0,20,"id",String.class, false),
-        NAME(1,80,"Nombre",String.class, false),
-        EMAIL(2,80,"Email",String.class, false),
-        PHONE_NUMBER(3,40,"Teléfono",String.class, false),
-        PHONE_NUMBER1(4,40,"Teléfono 2",String.class, false),
-        PHONE_NUMBER2(5,40,"Teléfono 3",String.class, false),
-        CREATION_DATE(6,40,"Creado",String.class, false);
-        
-        private final int number;
-        private final int size;
-        private final String name;
-        private final Class clazzType;
-        private final Boolean isEditable;
-
-        private Column(int number, int size, String name, Class clazzType, Boolean isEditable) {
-            this.number = number;
-            this.size = size;
-            this.name = name;
-            this.clazzType = clazzType;
-            this.isEditable = isEditable;
-        }
-        
-        public static String[] getColumnNames () {
-            List<String> columnNames = new ArrayList<>();
-            for (Column column : Column.values()) {
-                columnNames.add(column.getName());
-            }
-            return columnNames.toArray(new String[0]);
-        }
-    }
-
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -182,9 +99,7 @@ public class CustomersForm extends javax.swing.JInternalFrame {
         btnEdit = new javax.swing.JButton();
         btnSave = new javax.swing.JButton();
         btnDelete = new javax.swing.JButton();
-        jPanel3 = new javax.swing.JPanel();
-        jScrollPane1 = new javax.swing.JScrollPane();
-        table = new javax.swing.JTable();
+        paneCustomersTable = new javax.swing.JPanel();
         lblInfo = new javax.swing.JLabel();
 
         jLabel1.setText("Nombre:");
@@ -324,48 +239,21 @@ public class CustomersForm extends javax.swing.JInternalFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(txtEmail, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(17, Short.MAX_VALUE))
         );
 
-        table.setModel(new javax.swing.table.DefaultTableModel(
-            new Object [][] {
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null}
-            },
-            new String [] {
-                "Title 1", "Title 2", "Title 3", "Title 4"
-            }
-        ));
-        table.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                tableMouseClicked(evt);
-            }
-        });
-        jScrollPane1.setViewportView(table);
+        javax.swing.GroupLayout paneCustomersTableLayout = new javax.swing.GroupLayout(paneCustomersTable);
+        paneCustomersTable.setLayout(paneCustomersTableLayout);
+        paneCustomersTableLayout.setHorizontalGroup(
+            paneCustomersTableLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 860, Short.MAX_VALUE)
+        );
+        paneCustomersTableLayout.setVerticalGroup(
+            paneCustomersTableLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 256, Short.MAX_VALUE)
+        );
 
         lblInfo.setToolTipText("");
-
-        javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
-        jPanel3.setLayout(jPanel3Layout);
-        jPanel3Layout.setHorizontalGroup(
-            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel3Layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(lblInfo, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.TRAILING))
-                .addContainerGap())
-        );
-        jPanel3Layout.setVerticalGroup(
-            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
-                .addComponent(lblInfo, javax.swing.GroupLayout.PREFERRED_SIZE, 22, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 243, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-        );
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -375,7 +263,8 @@ public class CustomersForm extends javax.swing.JInternalFrame {
                 .addContainerGap()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(paneCustomersTable, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(lblInfo, javax.swing.GroupLayout.DEFAULT_SIZE, 860, Short.MAX_VALUE))
                 .addContainerGap())
         );
         jPanel1Layout.setVerticalGroup(
@@ -384,7 +273,9 @@ public class CustomersForm extends javax.swing.JInternalFrame {
                 .addContainerGap()
                 .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(lblInfo, javax.swing.GroupLayout.PREFERRED_SIZE, 22, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(paneCustomersTable, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
 
@@ -442,7 +333,9 @@ public class CustomersForm extends javax.swing.JInternalFrame {
     }//GEN-LAST:event_btnSaveActionPerformed
 
     private void editForm() {
-        String id = String.valueOf(table.getValueAt(table.getSelectedRow(), Column.ID.number));
+                
+        String id = 
+                String.valueOf(customersTableFormat.getValueAt(customersTableFormat.getSelectedRow(), TableFormatCustomers.Column.ID.getNumber()));
         this.txtName.requestFocus();
         this.btnSave.setEnabled(true);
         try {
@@ -460,14 +353,8 @@ public class CustomersForm extends javax.swing.JInternalFrame {
         }
     }
     
-    private void tableMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tableMouseClicked
-        if (evt.getClickCount() == 2) {
-            editForm();
-        }
-    }//GEN-LAST:event_tableMouseClicked
-
     private void btnEditActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEditActionPerformed
-        if (this.table.getSelectedRow() == - 1) {
+        if (this.customersTableFormat.getSelectedRow() == - 1) {
             JOptionPane.showMessageDialog(this, "Selecciona una fila para continuar ", "Error", JOptionPane.WARNING_MESSAGE);
             return;
         }
@@ -488,11 +375,9 @@ public class CustomersForm extends javax.swing.JInternalFrame {
     private javax.swing.JLabel jLabel7;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
-    private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel4;
-    private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JLabel lblInfo;
-    private javax.swing.JTable table;
+    private javax.swing.JPanel paneCustomersTable;
     private javax.swing.JTextField txtEmail;
     private javax.swing.JTextField txtLastName;
     private javax.swing.JTextField txtName;

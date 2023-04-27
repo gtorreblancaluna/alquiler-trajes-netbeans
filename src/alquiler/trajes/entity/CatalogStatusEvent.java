@@ -11,15 +11,15 @@ import javax.persistence.Table;
 
 
 @Entity
-@Table(name = ColumnDefinitionConstant.CATALOG_TYPE_EVENT_TABLE_NAME)
+@Table(name = ColumnDefinitionConstant.CATALOG_STATUS_EVENT_TABLE_NAME)
 @Builder(toBuilder = true)
 @AllArgsConstructor()
 @NoArgsConstructor()
 @Setter()
 @Getter
-public class CatalogTypeEvent {
+public class CatalogStatusEvent {
     
-    public CatalogTypeEvent (final Long id, final String name) {
+    public CatalogStatusEvent (final Long id, final String name) {
         this.id = id;
         this.name = name;
     }

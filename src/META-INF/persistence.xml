@@ -7,6 +7,7 @@
         <class>alquiler.trajes.entity.User</class>
         <class>alquiler.trajes.entity.Role</class>
         <class>alquiler.trajes.entity.CatalogTypeEvent</class>
+        <class>alquiler.trajes.entity.CatalogStatusEvent</class>
         <class>alquiler.trajes.entity.Payment</class>
         <class>alquiler.trajes.entity.Event</class>
         <class>alquiler.trajes.entity.DetailEvent</class>

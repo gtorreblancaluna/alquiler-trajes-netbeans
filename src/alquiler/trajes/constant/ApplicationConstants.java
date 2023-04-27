@@ -2,6 +2,9 @@ package alquiler.trajes.constant;
 
 public interface ApplicationConstants {
     
+    public static final String ARIAL = "Arial";
+    public static final int ENTER_KEY = 10;
+    
     public static final String NO_USER_FOUND_LOGIN = "No se encontro usuario, intenta de nuevo por favor.";
     
     public static final String NO_USER_FOUND = "Usuario no encontrado.";
@@ -12,6 +15,8 @@ public interface ApplicationConstants {
     public static final String TITLE_LOGIN_FORM = "Iniciar sesión.";
     public static final String TITLE_USERS_FORM = "Usuarios.";
     public static final String TITLE_CUSTOMERS_FORM = "Clientes.";
+    public static final String TITLE_EVENTS_FORM = "Eventos.";
+    public static final String TITLE_DETAIL_EVENT_DIALOG_FORM = "Detalle evento.";
        
     public static final String SELECT_A_ROW_TO_GENERATE_REPORT = "Selecciona una fila para generar el reporte...";
     public static final String SELECT_A_ROW_NECCESSARY = "Selecciona una fila para continuar...";

@@ -1,3 +1,10 @@
+CREATE TABLE catalog_status_event (
+  id INT(10) NOT NULL AUTO_INCREMENT,
+  name VARCHAR(255) NOT NULL,
+  enabled TINYINT NOT NULL DEFAULT 1,
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 CREATE TABLE catalog_type_event (
   id INT(10) NOT NULL AUTO_INCREMENT,
   name VARCHAR(255) NOT NULL,
@@ -9,6 +16,7 @@ CREATE TABLE events (
   id INT(10) NOT NULL AUTO_INCREMENT,
   user_id INT(10) DEFAULT NOT NULL,
   catalog_type_event_id INT(10) DEFAULT NOT NULL,
+  catalog_status_event_id INT(10) DEFAULT NOT NULL,
   customer_id INT(10) DEFAULT NOT NULL,
   delivery_date TIMESTAMP NOT NULL,
   return_date TIMESTAMP NULL,
@@ -29,6 +37,10 @@ CREATE TABLE events (
   CONSTRAINT fk_events_catalog_type_event_id
     FOREIGN KEY (catalog_type_event_id) 
     REFERENCES catalog_type_event (id) 
+    ON DELETE NO ACTION ON UPDATE NO ACTION,
+  CONSTRAINT fk_events_catalog_status_event_id
+    FOREIGN KEY (catalog_status_event_id) 
+    REFERENCES catalog_status_event (id) 
     ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -58,6 +70,7 @@ CREATE TABLE payments (
   user_id INT(10) DEFAULT NULL,
   event_id INT(10) DEFAULT NULL,
   comment VARCHAR(255) NULL,
+  payment FLOAT DEFAULT NULL,
   updated_at TIMESTAMP NULL,
   created_at TIMESTAMP NULL,
   enabled TINYINT NOT NULL DEFAULT 1,

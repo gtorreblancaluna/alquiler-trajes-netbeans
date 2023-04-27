@@ -5,8 +5,8 @@ import lombok.Getter;
 @Getter
 public enum CatalogTypeEventEnum {
     
-    ADMIN(1L,"Alquiler"),
-    DEFAULT(2L,"Venta");
+    RENT(1L,"Alquiler"),
+    SALES(2L,"Venta");
     
     private Long id;
     private String name;

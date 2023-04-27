@@ -9,3 +9,8 @@ INSERT INTO users_roles (user_id,role_id) VALUES (1,1);
 
 INSERT INTO catalog_type_event (name) VALUES ('Alquiler');
 INSERT INTO catalog_type_event (name) VALUES ('Venta');
+
+INSERT INTO catalog_status_event (name) VALUES ('Apartado');
+INSERT INTO catalog_status_event (name) VALUES ('En renta');
+INSERT INTO catalog_status_event (name) VALUES ('Cancelado');
+INSERT INTO catalog_status_event (name) VALUES ('Finalizado');

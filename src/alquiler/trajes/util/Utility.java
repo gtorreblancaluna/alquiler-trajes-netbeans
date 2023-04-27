@@ -8,6 +8,7 @@ import alquiler.trajes.form.login.LoginForm;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.text.Normalizer;
 import java.text.SimpleDateFormat;
 import java.util.Optional;
 import javax.swing.JPanel;
@@ -19,6 +20,61 @@ import javax.swing.JTable;
 public abstract class Utility {
     
     private static final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    
+        public static String deleteCharacters(String s_cadena, String s_caracteres) {
+        String nueva_cadena = "";
+        Character caracter = null;
+        boolean valido = true;
+
+        /* Va recorriendo la cadena s_cadena y copia a la cadena que va a regresar,
+         sólo los caracteres que no estén en la cadena s_caracteres */
+        for (int i = 0; i < s_cadena.length(); i++) {
+            valido = true;
+            for (int j = 0; j < s_caracteres.length(); j++) {
+                caracter = s_caracteres.charAt(j);
+
+                if (s_cadena.charAt(i) == caracter) {
+                    valido = false;
+                    break;
+                }
+            }
+            if (valido) {
+                nueva_cadena += s_cadena.charAt(i);
+            }
+        }
+
+        return nueva_cadena;
+    }
+    
+    public boolean validateHour(String hora) {
+        boolean b;
+        char[] a = hora.toString().toCharArray();
+        String[] c = hora.split(":");
+        if ((a[0] == ' ') || (a[1] == ' ') || (a[2] == ' ') || (a[3] == ' ') || (a[4] == ' ') || (Integer.parseInt(c[0]) > 24) || (Integer.parseInt(c[1]) > 59)) {
+            b=false;
+        }else{
+            b=true;
+        }
+        return b;
+    }
+    
+    public static void setTimeout(Runnable runnable, int delay){
+        new Thread(() -> {
+            try {
+                Thread.sleep(delay);
+                runnable.run();
+            }
+            catch (Exception e){
+                System.err.println(e);
+            }
+        }).start();
+    }
+    
+    public static String removeAccents(String texto) {
+        return Normalizer.normalize(texto, Normalizer.Form.NFD)
+                .replaceAll("[\\p{InCombiningDiacriticalMarks}]", "");
+
+    }
     
     public static void onlyAdminUserAccess () throws UnAuthorizedException {
         Optional<Role> adminRole = 
