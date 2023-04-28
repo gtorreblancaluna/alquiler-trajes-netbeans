@@ -2,12 +2,15 @@ package alquiler.trajes.entity;
 
 import alquiler.trajes.constant.ColumnDefinitionConstant;
 import lombok.*;
-import java.util.Date;
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
 
@@ -43,18 +46,10 @@ public class DetailEvent {
     
     @Column(name="advance_payment")
     private Float advancePayment;
-
-    @Column(
-        nullable = false,
-        columnDefinition = ColumnDefinitionConstant.TINYINT_DEFAULT_1_DEFINITION
-    )
-    private Boolean enabled;
-
-    @Column(name="created_at",nullable = false, updatable = false)
-    private Date createdAt;
     
-    @Column(name="updated_at",nullable = false)
-    private Date updatedAt;
+    @ManyToOne(optional = false, fetch = FetchType.EAGER)
+    @JoinColumn(name="event_id", nullable=false)
+    private Event event;
 
 
 }

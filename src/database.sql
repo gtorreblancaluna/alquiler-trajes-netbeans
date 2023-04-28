@@ -12,12 +12,39 @@ CREATE TABLE catalog_type_event (
   PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+CREATE TABLE users (
+  id INT(10) NOT NULL AUTO_INCREMENT,
+  email VARCHAR(255) NULL,
+  password VARCHAR(255) NULL,
+  name VARCHAR(255) NOT NULL,
+  last_name VARCHAR(255) NOT NULL,
+  phone_number VARCHAR(255) NULL,
+  updated_at TIMESTAMP NULL,
+  created_at TIMESTAMP NULL,
+  enabled TINYINT NOT NULL DEFAULT 1,
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE customers (
+  id INT(10) NOT NULL AUTO_INCREMENT,
+  email VARCHAR(255) NULL,
+  name VARCHAR(255) NOT NULL,
+  last_name VARCHAR(255) NOT NULL,
+  phone_number1 VARCHAR(255) NOT NULL,
+  phone_number2 VARCHAR(255) NULL,
+  phone_number3 VARCHAR(255) NULL,
+  updated_at TIMESTAMP NULL,
+  created_at TIMESTAMP NULL,
+  enabled TINYINT NOT NULL DEFAULT 1,
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 CREATE TABLE events (
   id INT(10) NOT NULL AUTO_INCREMENT,
-  user_id INT(10) DEFAULT NOT NULL,
-  catalog_type_event_id INT(10) DEFAULT NOT NULL,
-  catalog_status_event_id INT(10) DEFAULT NOT NULL,
-  customer_id INT(10) DEFAULT NOT NULL,
+  user_id INT(10) DEFAULT NULL,
+  catalog_type_event_id INT(10) DEFAULT NULL,
+  catalog_status_event_id INT(10) DEFAULT NULL,
+  customer_id INT(10) DEFAULT NULL,
   delivery_date TIMESTAMP NOT NULL,
   return_date TIMESTAMP NULL,
   updated_at TIMESTAMP NULL,
@@ -46,18 +73,15 @@ CREATE TABLE events (
 
 CREATE TABLE detail_event (
   id INT(10) NOT NULL AUTO_INCREMENT,
-  event_id INT(10) DEFAULT NOT NULL,
+  event_id INT(10) DEFAULT NULL,
   -- agregado
   name_of_aggregate VARCHAR(355) NOT NULL,
-  description VARCHAR(755) NULL,
+  items VARCHAR(755) NULL,
   -- ajustes
   adjustments VARCHAR(755) NULL,
   unit_price FLOAT DEFAULT NULL,
   -- anticipo
   advance_payment FLOAT DEFAULT NULL,
-  updated_at TIMESTAMP NULL,
-  created_at TIMESTAMP NULL,
-  enabled TINYINT NOT NULL DEFAULT 1,
   PRIMARY KEY (id),
   CONSTRAINT fk_detail_event_event_id
     FOREIGN KEY (event_id) 
@@ -85,32 +109,7 @@ CREATE TABLE payments (
     ON DELETE NO ACTION ON UPDATE NO ACTION
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE customers (
-  id INT(10) NOT NULL AUTO_INCREMENT,
-  email VARCHAR(255) NULL,
-  name VARCHAR(255) NOT NULL,
-  last_name VARCHAR(255) NOT NULL,
-  phone_number1 VARCHAR(255) NOT NULL,
-  phone_number2 VARCHAR(255) NULL,
-  phone_number3 VARCHAR(255) NULL,
-  updated_at TIMESTAMP NULL,
-  created_at TIMESTAMP NULL,
-  enabled TINYINT NOT NULL DEFAULT 1,
-  PRIMARY KEY (id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE users (
-  id INT(10) NOT NULL AUTO_INCREMENT,
-  email VARCHAR(255) NULL,
-  password VARCHAR(255) NULL,
-  name VARCHAR(255) NOT NULL,
-  last_name VARCHAR(255) NOT NULL,
-  phone_number VARCHAR(255) NULL,
-  updated_at TIMESTAMP NULL,
-  created_at TIMESTAMP NULL,
-  enabled TINYINT NOT NULL DEFAULT 1,
-  PRIMARY KEY (id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE roles (
   id INT(10) NOT NULL AUTO_INCREMENT,

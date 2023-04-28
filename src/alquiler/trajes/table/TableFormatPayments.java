@@ -24,11 +24,10 @@ public class TableFormatPayments extends JTable {
     public enum Column {
         
         ID(0,20,"id",String.class, false),
-        USER_ID(1,20,"id",String.class, false),
-        IMPORT(2,40,"Importe",String.class, false),
-        CONCEPT(3,80,"Concept",String.class, false),
-        DATE(4,80,"Fecha",String.class, false),
-        USER(5,80,"Usuario",String.class, false);
+        IMPORT(1,40,"Importe",String.class, false),
+        CONCEPT(2,80,"Concepto",String.class, false),
+        DATE(3,80,"Fecha",String.class, false),
+        USER(4,80,"Usuario",String.class, false);
         
         private final int number;
         private final int size;
@@ -107,10 +106,6 @@ public class TableFormatPayments extends JTable {
         this.getColumnModel().getColumn(Column.ID.getNumber()).setMaxWidth(0);
         this.getColumnModel().getColumn(Column.ID.getNumber()).setMinWidth(0);
         this.getColumnModel().getColumn(Column.ID.getNumber()).setPreferredWidth(0);
-        
-        this.getColumnModel().getColumn(Column.USER_ID.getNumber()).setMaxWidth(0);
-        this.getColumnModel().getColumn(Column.USER_ID.getNumber()).setMinWidth(0);
-        this.getColumnModel().getColumn(Column.USER_ID.getNumber()).setPreferredWidth(0);
         
         this.getColumnModel().getColumn(Column.IMPORT.getNumber()).setCellRenderer(right);
         

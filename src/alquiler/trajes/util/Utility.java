@@ -1,6 +1,7 @@
 package alquiler.trajes.util;
 
 import alquiler.trajes.constant.ApplicationConstants;
+import static alquiler.trajes.constant.ApplicationConstants.MESSAGE_TITLE_DETELE_RECORD_CONFIRM;
 import alquiler.trajes.constant.RoleEnum;
 import alquiler.trajes.entity.Role;
 import alquiler.trajes.exceptions.UnAuthorizedException;
@@ -11,6 +12,7 @@ import java.net.URISyntaxException;
 import java.text.Normalizer;
 import java.text.SimpleDateFormat;
 import java.util.Optional;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -18,6 +20,17 @@ import javax.swing.JTable;
 
 
 public abstract class Utility {
+    
+    public static int showConfirmDialogYesNo () {
+        // return 0 when yes button pusehd.
+        return JOptionPane.showOptionDialog(null,
+                String.format(ApplicationConstants.DETELE_RECORD_CONFIRM, 
+                            ""),
+                            MESSAGE_TITLE_DETELE_RECORD_CONFIRM,
+                            JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null, new Object[]{"Si", "No"}, "Si"
+                );
+        
+    }
     
     private static final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     
@@ -46,9 +59,9 @@ public abstract class Utility {
         return nueva_cadena;
     }
     
-    public boolean validateHour(String hora) {
+    public static boolean validateHour(String hora) {
         boolean b;
-        char[] a = hora.toString().toCharArray();
+        char[] a = hora.toCharArray();
         String[] c = hora.split(":");
         if ((a[0] == ' ') || (a[1] == ' ') || (a[2] == ' ') || (a[3] == ' ') || (a[4] == ' ') || (Integer.parseInt(c[0]) > 24) || (Integer.parseInt(c[1]) > 59)) {
             b=false;

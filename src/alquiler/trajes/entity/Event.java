@@ -29,15 +29,19 @@ public class Event {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(optional = false, cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @ManyToOne(optional = false, fetch = FetchType.EAGER)
     @JoinColumn(name="user_id", nullable=false)
     private User user;
     
-    @ManyToOne(optional = false, cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @ManyToOne(optional = false, fetch = FetchType.EAGER)
     @JoinColumn(name="catalog_type_event_id", nullable=false)
     private CatalogTypeEvent catalogTypeEvent;
     
-    @ManyToOne(optional = false, cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @ManyToOne(optional = false, fetch = FetchType.EAGER)
+    @JoinColumn(name="catalog_status_event_id", nullable=false)
+    private CatalogStatusEvent catalogStatusEvent;
+    
+    @ManyToOne(optional = false, fetch = FetchType.EAGER)
     @JoinColumn(name="customer_id", nullable=false)
     private Customer customer;
     

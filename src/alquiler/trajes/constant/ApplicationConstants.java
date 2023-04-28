@@ -2,6 +2,8 @@ package alquiler.trajes.constant;
 
 public interface ApplicationConstants {
     
+    public static final String DATE_MEDIUM = "dd MMM yyyy";
+    
     public static final String ARIAL = "Arial";
     public static final int ENTER_KEY = 10;
     
@@ -20,7 +22,7 @@ public interface ApplicationConstants {
        
     public static final String SELECT_A_ROW_TO_GENERATE_REPORT = "Selecciona una fila para generar el reporte...";
     public static final String SELECT_A_ROW_NECCESSARY = "Selecciona una fila para continuar...";
-    public static final String ALREADY_AVAILABLE = "La ventana ya se encuentra disponible";
+    public static final String MISSING_DATA = "Faltan datos.";
     
     
     public static final String LOGO_EMPRESA = "/logo_empresa.jpg";
@@ -37,7 +39,9 @@ public interface ApplicationConstants {
     public static final String MESSAGE_MISSING_PARAMETERS = "Faltan parametros.";
     public static final String MESSAGE_UNEXPECTED_ERROR = "Ocurri\u00F3 un error inesperado.";
     public static final String MESSAGE_TITLE_ERROR = "Error";
+    public static final String MESSAGE_TITLE_DETELE_RECORD_CONFIRM = "Confirme";
     public static final String NO_DATA_FOUND_EXCEPTION = "No se obtuvieron registros.";
+    public static final String DETELE_RECORD_CONFIRM = "¿Eliminar registro? %s";
     
     /* mensaje generico */
     public static final String DS_MESSAGE_FAIL_LOGIN = "Contrase\u00F1a incorrecta o usuario no encontrado";

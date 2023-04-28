@@ -1,6 +1,7 @@
 package alquiler.trajes.form.event;
 
 import alquiler.trajes.constant.ApplicationConstants;
+import static alquiler.trajes.constant.ApplicationConstants.DATE_MEDIUM;
 import static alquiler.trajes.constant.ApplicationConstants.ENTER_KEY;
 import static alquiler.trajes.constant.ApplicationConstants.MESSAGE_TITLE_ERROR;
 import alquiler.trajes.entity.CatalogStatusEvent;
@@ -10,21 +11,27 @@ import alquiler.trajes.entity.DetailEvent;
 import alquiler.trajes.entity.Event;
 import alquiler.trajes.entity.Payment;
 import alquiler.trajes.exceptions.BusinessException;
+import alquiler.trajes.exceptions.InvalidDataException;
 import alquiler.trajes.exceptions.NoDataFoundException;
+import alquiler.trajes.exceptions.UnAuthorizedException;
 import alquiler.trajes.form.login.LoginForm;
 import alquiler.trajes.service.CatalogStatusEventService;
 import alquiler.trajes.service.CatalogTypeEventService;
 import alquiler.trajes.service.CustomerService;
+import alquiler.trajes.service.EventService;
 import alquiler.trajes.table.TableFormatDetail;
 import alquiler.trajes.table.TableFormatCustomers;
 import alquiler.trajes.table.TableFormatPayments;
 import alquiler.trajes.util.Utility;
+import static alquiler.trajes.util.Utility.onlyAdminUserAccess;
 import java.awt.Frame;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeEvent;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -32,14 +39,15 @@ import java.util.stream.Collectors;
 import javax.swing.JOptionPane;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
+import org.apache.commons.lang3.time.FastDateFormat;
 
 
 public class EventForm extends javax.swing.JInternalFrame {
 
-    private final Long eventId;
+    private Long eventId;
     private Event event;
-    private DetailEvent detailEvent;
-    private List<Payment> payemnts;
+    private List<Payment> paymentsEvent;
+    private List<DetailEvent> detailEvent;
     private final static int INDEX_CUSTOMER_PANE = 0;
     private final static int INDEX_EVENT_PANE = 1;
     private final CustomerService customerService;
@@ -51,9 +59,16 @@ public class EventForm extends javax.swing.JInternalFrame {
     private static final String DATE_VALUE_CHOOSER = "date";
     private final CatalogTypeEventService catalogTypeEventService;
     private final CatalogStatusEventService catalogStatusEventService;
+    private final EventService eventService;
     private List<CatalogTypeEvent> types = new ArrayList<>();
     private List<CatalogStatusEvent> status = new ArrayList<>();
     private static final DecimalFormat decimalFormat = new DecimalFormat( "#,###,###,##0.00" );
+    private final FastDateFormat fastDateFormatMedium = FastDateFormat.getInstance(DATE_MEDIUM);
+    private String referenceRowToEditPaymentTable = null;
+    private static final int POSITION_HOUR = 0;
+    private static final int POSITION_MINUTE = 1;
+    private static final String REGEX_SPLIT_HOUR = ":";
+    private static final String DELETE_CHARS_NUMBER = "$,";
     
     public EventForm(Long eventId) {
         initComponents();
@@ -62,6 +77,7 @@ public class EventForm extends javax.swing.JInternalFrame {
         this.customerService = CustomerService.getInstance();
         catalogTypeEventService = CatalogTypeEventService.getInstance();
         catalogStatusEventService = CatalogStatusEventService.getInstance();
+        eventService = EventService.getInstance();
         customersTableFormat = new TableFormatCustomers();
         tableFormatDetail = new TableFormatDetail();
         tableFormatPayments = new TableFormatPayments();
@@ -72,6 +88,7 @@ public class EventForm extends javax.swing.JInternalFrame {
         new Thread(() -> {
             getCustomers();
         }).start();
+        btnEventAdd.setEnabled(false);
         if (this.eventId != null) {
             initFormWithExistentEvent();
         } else {
@@ -81,7 +98,193 @@ public class EventForm extends javax.swing.JInternalFrame {
         addMouseListenerToTableCustomers();      
         addActionListenerToDateChoosers();
         addMouseListenerToTableDetail();
+        addMouseListenerToTablePayments();
 
+    }
+    
+    private void getEventDateFromInputs () throws InvalidDataException{
+        boolean returnHourIsValid = false;
+        if (!Utility.validateHour(txtDeliveryHour.getText())) {
+            throw new InvalidDataException("Ingresa una hora de entrega valida.");
+        }
+        
+        if (dateChooserReturnDate.getDate() != null && !Utility.validateHour(txtReturnHour.getText())) {
+            throw new InvalidDataException("Ingresa una hora de devolución valida.");
+        } else {
+            returnHourIsValid = true;
+        }
+        
+        String[] deliveryHour = txtDeliveryHour.getText().split(REGEX_SPLIT_HOUR);
+        String[] returnHour = txtReturnHour.getText().split(REGEX_SPLIT_HOUR);
+        
+        Date deliveryDate = dateChooserDeliveryDate.getDate();
+        Date returnDate = dateChooserReturnDate.getDate();
+        
+        if (deliveryDate == null) {
+            throw new InvalidDataException("Fecha de entrega es requerida.");
+        }
+        
+        if(returnDate != null && deliveryDate.after(returnDate)){
+           throw new InvalidDataException("Fecha de entrega debe ser menor a la fecha de devolución.");
+        }
+        
+        Calendar calendarDeliveryDate = Calendar.getInstance();
+        calendarDeliveryDate.setTime(deliveryDate);
+        calendarDeliveryDate.set(Calendar.HOUR_OF_DAY, Integer.parseInt(deliveryHour[POSITION_HOUR]));
+        calendarDeliveryDate.set(Calendar.MINUTE, Integer.parseInt(deliveryHour[POSITION_MINUTE]));
+        event.setDeliveryDate(calendarDeliveryDate.getTime());
+        
+        if (returnHourIsValid) {
+            Calendar calendarReturnDate = Calendar.getInstance();
+            calendarReturnDate.setTime(returnDate);
+            calendarReturnDate.set(Calendar.HOUR_OF_DAY, Integer.parseInt(returnHour[POSITION_HOUR]));
+            calendarReturnDate.set(Calendar.MINUTE, Integer.parseInt(returnHour[POSITION_MINUTE]));
+            event.setReturnDate(calendarReturnDate.getTime());
+        }
+        
+        
+    }
+    private void getEventFromInputs () throws InvalidDataException{
+        event.setCatalogTypeEvent((CatalogTypeEvent) cmbCatalogType.getModel().getSelectedItem());
+        event.setCatalogStatusEvent((CatalogStatusEvent) cmbStatus.getModel().getSelectedItem());
+        event.setDescription(txtAreaDescription.getText().trim());
+    }
+    
+    private void getDetailEventFromTable () throws InvalidDataException {
+        if (tableFormatDetail.getRowCount() < 0) {
+            throw new InvalidDataException("Agrega al menos un detalle al evento.");
+        }
+        detailEvent = new ArrayList<>();
+        for (int i = 0; i < tableFormatDetail.getRowCount(); i++) {
+            detailEvent.add(
+                    DetailEvent.builder()
+                            .nameOfAggregate(
+                                    String.valueOf(tableFormatDetail.getValueAt(i, TableFormatDetail.Column.NAME.getNumber()))
+                            ).items(
+                                    String.valueOf(tableFormatDetail.getValueAt(i, TableFormatDetail.Column.ITEMS.getNumber()))
+                            ).adjustments(
+                                    String.valueOf(tableFormatDetail.getValueAt(i, TableFormatDetail.Column.ADJUTS.getNumber()))
+                            )
+                            .unitPrice(
+                                    Float.parseFloat(
+                                            String.valueOf(tableFormatDetail.getValueAt(i, TableFormatDetail.Column.IMPORT.getNumber())))
+                            ).advancePayment(
+                                    Float.parseFloat(
+                                            String.valueOf(tableFormatDetail.getValueAt(i, TableFormatDetail.Column.PAYMENT.getNumber())))
+                            )
+                            .build()
+            );
+        }
+    }
+    
+    private void getPaymentsFromTable() {
+        for (int i = 0; i < this.tableFormatPayments.getRowCount(); i++) {
+            Long id = 
+                Long.parseLong(
+                        String.valueOf(this.tableFormatPayments.getValueAt(i, TableFormatPayments.Column.ID.getNumber())));
+            
+            final float payment = 
+                        Float.parseFloat(
+                                Utility.deleteCharacters(String.valueOf(tableFormatPayments.getValueAt(i, TableFormatPayments.Column.IMPORT.getNumber())),DELETE_CHARS_NUMBER));
+            final String comment =
+                    String.valueOf(tableFormatPayments.getValueAt(i, TableFormatPayments.Column.CONCEPT.getNumber()));
+            
+            if (id.equals(0L)) {
+                paymentsEvent.add(
+                        Payment.builder()
+                                .id(0L)
+                                .comment(comment)
+                                .payment(payment)
+                                .user(LoginForm.userSession)
+                                .createdAt(new Date())
+                                .build()
+                );
+            } else {
+                paymentsEvent.stream()
+                    .filter(t -> t.getId().equals(id))
+                    .peek(t -> t.setPayment(payment))
+                    .peek(t -> t.setComment(comment))
+                    .findFirst();
+            }
+        }
+        fillTablePayments(paymentsEvent);
+    }
+    
+    private void fillTablePayments (List<Payment> list) {
+        this.tableFormatPayments.format();
+        for (Payment payment : list) {
+            DefaultTableModel temp = (DefaultTableModel) tableFormatPayments.getModel();
+            Object row[] = {
+                payment.getId(),
+                payment.getPayment(),
+                payment.getComment(),
+                fastDateFormatMedium.format(payment.getCreatedAt()),
+                payment.getUser().getName()+ " "+ payment.getUser().getLastName()
+            };
+            temp.addRow(row);
+        }
+    }
+    
+    
+    private void enableForm () {
+      this.dateChooserDeliveryDate.setEnabled(true);
+      this.dateChooserReturnDate.setEnabled(true);
+      this.cmbCatalogType.setEnabled(true);
+      this.cmbStatus.setEnabled(true);
+      this.txtDeliveryHour.setEnabled(true);
+      this.txtReturnHour.setEnabled(true);
+      this.txtAreaDescription.setEnabled(true);
+      this.tableFormatDetail.setEnabled(true);
+      this.tableFormatPayments.setEnabled(true);
+      btnAgregadosDelete.setEnabled(true);
+      btnAgregadosEdit.setEnabled(true);
+      btnAgregadosAdd.setEnabled(true);
+      txtPaymentImport.setEnabled(true);
+      txtPaymentsConcept.setEnabled(true);
+      btnPaymentsSave.setEnabled(true);
+      btnPaymentsDelete.setEnabled(true);
+      btnPaymentsEdit.setEnabled(true);
+      btnEdit.setEnabled(false);
+      btnSave.setEnabled(true);
+    }
+    
+    private void disableForm () {
+      this.dateChooserDeliveryDate.setEnabled(false);
+      this.dateChooserReturnDate.setEnabled(false);
+      this.cmbCatalogType.setEnabled(false);
+      this.cmbStatus.setEnabled(false);
+      this.txtDeliveryHour.setEnabled(false);
+      this.txtReturnHour.setEnabled(false);
+      this.txtAreaDescription.setEnabled(false);
+      this.tableFormatDetail.setEnabled(false);
+      this.tableFormatPayments.setEnabled(false);
+      btnAgregadosDelete.setEnabled(false);
+      btnAgregadosEdit.setEnabled(false);
+      btnAgregadosAdd.setEnabled(false);
+      txtPaymentImport.setEnabled(false);
+      txtPaymentsConcept.setEnabled(false);
+      btnPaymentsSave.setEnabled(false);
+      btnPaymentsDelete.setEnabled(false);
+      btnPaymentsEdit.setEnabled(false);
+      btnEdit.setVisible(true);
+      btnEdit.setEnabled(true);
+      btnSave.setEnabled(false);
+    }
+    
+    private void save () {
+        try {
+            getEventDateFromInputs();
+            getEventFromInputs();
+            getDetailEventFromTable();
+            getPaymentsFromTable();
+            eventService.save(event,detailEvent,paymentsEvent);
+            lblFolio.setText(String.valueOf(event.getId()));
+            disableForm();
+            btnEventAdd.setEnabled(true);
+                        
+        } catch (BusinessException e) {
+            JOptionPane.showMessageDialog(this, e.getMessage(), MESSAGE_TITLE_ERROR, JOptionPane.ERROR_MESSAGE);  
+        }
     }
     
     private void total () {
@@ -90,14 +293,15 @@ public class EventForm extends javax.swing.JInternalFrame {
         for (int i = 0 ; i < tableFormatDetail.getRowCount() ; i++) {
             detailTotal += 
                     Float.parseFloat(
-                            String.valueOf(tableFormatDetail.getValueAt(i, TableFormatDetail.Column.IMPORT.getNumber())));
+                            Utility.deleteCharacters(String.valueOf(tableFormatDetail.getValueAt(i, TableFormatDetail.Column.IMPORT.getNumber())),DELETE_CHARS_NUMBER));
         }
         for (int i = 0 ; i < tableFormatPayments.getRowCount() ; i++) {
             paymentsTotal += 
                     Float.parseFloat(
-                            String.valueOf(tableFormatPayments.getValueAt(i, TableFormatPayments.Column.IMPORT.getNumber())));
+                            Utility.deleteCharacters(String.valueOf(tableFormatPayments.getValueAt(i, TableFormatPayments.Column.IMPORT.getNumber())),DELETE_CHARS_NUMBER));
         }
         this.lblSubTotal.setText(decimalFormat.format(detailTotal));
+        this.lblPayments.setText(decimalFormat.format(paymentsTotal));
         this.lblTotal.setText(decimalFormat.format(detailTotal-paymentsTotal));
     }
     
@@ -116,9 +320,9 @@ public class EventForm extends javax.swing.JInternalFrame {
                 JOptionPane.showMessageDialog(this, e, MESSAGE_TITLE_ERROR, JOptionPane.ERROR_MESSAGE);  
             }
         }
-        cmbPayments.removeAllItems();
+        cmbCatalogType.removeAllItems();
         types.stream().forEach(t -> {
-            cmbPayments.addItem(t);
+            cmbCatalogType.addItem(t);
         });
         
         
@@ -134,6 +338,7 @@ public class EventForm extends javax.swing.JInternalFrame {
         lblInfoUser.setText("Atendió:");
         getEventById(this.eventId);
         tabPaneMain.setSelectedIndex(INDEX_EVENT_PANE);
+        disableForm();
     }
     
     private void initFormWithNewEvent () {
@@ -144,6 +349,7 @@ public class EventForm extends javax.swing.JInternalFrame {
         tabPaneMain.setSelectedIndex(INDEX_CUSTOMER_PANE);
         Utility.setTimeout(() -> this.txtName.requestFocus(), 500);
         lblUser.setText(LoginForm.userSession.getName() + " " + LoginForm.userSession.getLastName());
+        paymentsEvent = new ArrayList<>();
     }
     
     private void addActionListenerToDateChoosers () {
@@ -157,6 +363,16 @@ public class EventForm extends javax.swing.JInternalFrame {
                 txtReturnHour.requestFocus();
             }
         });
+    }
+    
+    private void addMouseListenerToTablePayments () {
+        tableFormatPayments.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent e) {
+              if (e.getClickCount() == 2) {
+                editPaymentForm();                
+              }
+            }
+          });
     }
     
     private void addMouseListenerToTableDetail () {
@@ -309,7 +525,7 @@ public class EventForm extends javax.swing.JInternalFrame {
         txtPhoneNumber3 = new javax.swing.JTextField();
         txtEmail = new javax.swing.JTextField();
         jLabel7 = new javax.swing.JLabel();
-        btnSave = new javax.swing.JButton();
+        btnSaveCustomer = new javax.swing.JButton();
         paneCustomersTable = new javax.swing.JPanel();
         panelEvent = new javax.swing.JPanel();
         jPanel2 = new javax.swing.JPanel();
@@ -335,14 +551,13 @@ public class EventForm extends javax.swing.JInternalFrame {
         panelInnerPayments = new javax.swing.JPanel();
         jPanel7 = new javax.swing.JPanel();
         btnPaymentsEdit = new javax.swing.JButton();
-        btnPaymentsAdd = new javax.swing.JButton();
         btnPaymentsDelete = new javax.swing.JButton();
         btnPaymentsSave = new javax.swing.JButton();
         jPanel5 = new javax.swing.JPanel();
         jLabel19 = new javax.swing.JLabel();
-        txtPaymentImport = new javax.swing.JTextField();
         jLabel20 = new javax.swing.JLabel();
         txtPaymentsConcept = new javax.swing.JTextField();
+        txtPaymentImport = new javax.swing.JFormattedTextField();
         panelInnerPaymetsTable = new javax.swing.JPanel();
         jPanel3 = new javax.swing.JPanel();
         jLabel3 = new javax.swing.JLabel();
@@ -350,7 +565,7 @@ public class EventForm extends javax.swing.JInternalFrame {
         jLabel8 = new javax.swing.JLabel();
         dateChooserReturnDate = new com.toedter.calendar.JDateChooser();
         jLabel9 = new javax.swing.JLabel();
-        cmbPayments = new javax.swing.JComboBox<>();
+        cmbCatalogType = new javax.swing.JComboBox<>();
         txtDeliveryHour = new javax.swing.JFormattedTextField();
         txtReturnHour = new javax.swing.JFormattedTextField();
         jLabel10 = new javax.swing.JLabel();
@@ -358,7 +573,9 @@ public class EventForm extends javax.swing.JInternalFrame {
         jLabel18 = new javax.swing.JLabel();
         jPanel4 = new javax.swing.JPanel();
         btnEdit = new javax.swing.JButton();
-        btnSave1 = new javax.swing.JButton();
+        btnSave = new javax.swing.JButton();
+        btnGeneratePDF = new javax.swing.JButton();
+        btnEventAdd = new javax.swing.JButton();
         jScrollPane2 = new javax.swing.JScrollPane();
         txtAreaDescription = new javax.swing.JTextPane();
         cmbStatus = new javax.swing.JComboBox<>();
@@ -414,12 +631,12 @@ public class EventForm extends javax.swing.JInternalFrame {
 
         jLabel7.setText("Email:");
 
-        btnSave.setIcon(new javax.swing.ImageIcon(getClass().getResource("/alquiler/trajes/img/img32/diskette-32.png"))); // NOI18N
-        btnSave.setToolTipText("Guardar");
-        btnSave.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        btnSave.addActionListener(new java.awt.event.ActionListener() {
+        btnSaveCustomer.setIcon(new javax.swing.ImageIcon(getClass().getResource("/alquiler/trajes/img/img32/diskette-32.png"))); // NOI18N
+        btnSaveCustomer.setToolTipText("Guardar");
+        btnSaveCustomer.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnSaveCustomer.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnSaveActionPerformed(evt);
+                btnSaveCustomerActionPerformed(evt);
             }
         });
 
@@ -443,7 +660,7 @@ public class EventForm extends javax.swing.JInternalFrame {
                         .addComponent(txtPhoneNumber2)
                         .addComponent(txtPhoneNumber3)
                         .addComponent(txtEmail))
-                    .addComponent(btnSave, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(btnSaveCustomer, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
@@ -474,7 +691,7 @@ public class EventForm extends javax.swing.JInternalFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(txtEmail, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(btnSave, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(btnSaveCustomer, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGap(92, 92, 92))
         );
 
@@ -610,7 +827,7 @@ public class EventForm extends javax.swing.JInternalFrame {
         );
         panelInnerTableAgregadosLayout.setVerticalGroup(
             panelInnerTableAgregadosLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 273, Short.MAX_VALUE)
+            .addGap(0, 264, Short.MAX_VALUE)
         );
 
         btnAgregadosEdit.setIcon(new javax.swing.ImageIcon(getClass().getResource("/alquiler/trajes/img/img32/edit-32.png"))); // NOI18N
@@ -623,7 +840,7 @@ public class EventForm extends javax.swing.JInternalFrame {
         });
 
         btnAgregadosAdd.setIcon(new javax.swing.ImageIcon(getClass().getResource("/alquiler/trajes/img/img32/add-32.png"))); // NOI18N
-        btnAgregadosAdd.setToolTipText("Editar");
+        btnAgregadosAdd.setToolTipText("Agregar detalle");
         btnAgregadosAdd.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         btnAgregadosAdd.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -632,7 +849,7 @@ public class EventForm extends javax.swing.JInternalFrame {
         });
 
         btnAgregadosDelete.setIcon(new javax.swing.ImageIcon(getClass().getResource("/alquiler/trajes/img/img32/delete-32.png"))); // NOI18N
-        btnAgregadosDelete.setToolTipText("Editar");
+        btnAgregadosDelete.setToolTipText("Eliminar");
         btnAgregadosDelete.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         btnAgregadosDelete.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -686,6 +903,17 @@ public class EventForm extends javax.swing.JInternalFrame {
 
         jTabbedPane1.addTab("Agregados", panelInnerAdds);
 
+        panelInnerPayments.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                panelInnerPaymentsMouseClicked(evt);
+            }
+        });
+        panelInnerPayments.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                panelInnerPaymentsKeyPressed(evt);
+            }
+        });
+
         btnPaymentsEdit.setIcon(new javax.swing.ImageIcon(getClass().getResource("/alquiler/trajes/img/img32/edit-32.png"))); // NOI18N
         btnPaymentsEdit.setToolTipText("Editar");
         btnPaymentsEdit.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
@@ -695,17 +923,8 @@ public class EventForm extends javax.swing.JInternalFrame {
             }
         });
 
-        btnPaymentsAdd.setIcon(new javax.swing.ImageIcon(getClass().getResource("/alquiler/trajes/img/img32/add-32.png"))); // NOI18N
-        btnPaymentsAdd.setToolTipText("Editar");
-        btnPaymentsAdd.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        btnPaymentsAdd.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnPaymentsAddActionPerformed(evt);
-            }
-        });
-
         btnPaymentsDelete.setIcon(new javax.swing.ImageIcon(getClass().getResource("/alquiler/trajes/img/img32/delete-32.png"))); // NOI18N
-        btnPaymentsDelete.setToolTipText("Editar");
+        btnPaymentsDelete.setToolTipText("Eliminar");
         btnPaymentsDelete.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         btnPaymentsDelete.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -727,31 +946,46 @@ public class EventForm extends javax.swing.JInternalFrame {
         jPanel7Layout.setHorizontalGroup(
             jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel7Layout.createSequentialGroup()
-                .addGroup(jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(btnPaymentsSave, javax.swing.GroupLayout.PREFERRED_SIZE, 38, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGroup(jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addComponent(btnPaymentsAdd, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(btnPaymentsEdit, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(btnPaymentsDelete, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addGroup(jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel7Layout.createSequentialGroup()
+                        .addGap(3, 3, 3)
+                        .addComponent(btnPaymentsSave, javax.swing.GroupLayout.PREFERRED_SIZE, 38, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(0, 0, Short.MAX_VALUE))
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel7Layout.createSequentialGroup()
+                        .addGap(0, 0, Short.MAX_VALUE)
+                        .addGroup(jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(btnPaymentsEdit, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(btnPaymentsDelete, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                .addContainerGap())
         );
         jPanel7Layout.setVerticalGroup(
             jPanel7Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel7Layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(btnPaymentsAdd)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(btnPaymentsEdit)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(btnPaymentsDelete)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(btnPaymentsSave)
-                .addContainerGap(75, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         jLabel19.setText("Importe:");
 
         jLabel20.setText("Concepto:");
+
+        txtPaymentsConcept.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                txtPaymentsConceptKeyPressed(evt);
+            }
+        });
+
+        txtPaymentImport.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.NumberFormatter()));
+        txtPaymentImport.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                txtPaymentImportKeyPressed(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel5Layout = new javax.swing.GroupLayout(jPanel5);
         jPanel5.setLayout(jPanel5Layout);
@@ -760,13 +994,13 @@ public class EventForm extends javax.swing.JInternalFrame {
             .addGroup(jPanel5Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(txtPaymentImport)
+                    .addComponent(txtPaymentsConcept)
                     .addGroup(jPanel5Layout.createSequentialGroup()
                         .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jLabel19)
                             .addComponent(jLabel20))
                         .addGap(0, 189, Short.MAX_VALUE))
-                    .addComponent(txtPaymentsConcept))
+                    .addComponent(txtPaymentImport))
                 .addContainerGap())
         );
         jPanel5Layout.setVerticalGroup(
@@ -780,7 +1014,7 @@ public class EventForm extends javax.swing.JInternalFrame {
                 .addComponent(jLabel20)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(txtPaymentsConcept, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(154, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout panelInnerPaymetsTableLayout = new javax.swing.GroupLayout(panelInnerPaymetsTable);
@@ -853,12 +1087,30 @@ public class EventForm extends javax.swing.JInternalFrame {
             }
         });
 
-        btnSave1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/alquiler/trajes/img/img32/diskette-32.png"))); // NOI18N
-        btnSave1.setToolTipText("Guardar");
-        btnSave1.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        btnSave1.addActionListener(new java.awt.event.ActionListener() {
+        btnSave.setIcon(new javax.swing.ImageIcon(getClass().getResource("/alquiler/trajes/img/img32/diskette-32.png"))); // NOI18N
+        btnSave.setToolTipText("Guardar");
+        btnSave.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnSave.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnSave1ActionPerformed(evt);
+                btnSaveActionPerformed(evt);
+            }
+        });
+
+        btnGeneratePDF.setIcon(new javax.swing.ImageIcon(getClass().getResource("/alquiler/trajes/img/img32/descargar-pdf-32.png"))); // NOI18N
+        btnGeneratePDF.setToolTipText("Editar");
+        btnGeneratePDF.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnGeneratePDF.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnGeneratePDFActionPerformed(evt);
+            }
+        });
+
+        btnEventAdd.setIcon(new javax.swing.ImageIcon(getClass().getResource("/alquiler/trajes/img/img32/add-32.png"))); // NOI18N
+        btnEventAdd.setToolTipText("Nuevo evento");
+        btnEventAdd.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnEventAdd.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnEventAddActionPerformed(evt);
             }
         });
 
@@ -868,14 +1120,21 @@ public class EventForm extends javax.swing.JInternalFrame {
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel4Layout.createSequentialGroup()
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(btnGeneratePDF, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(btnEventAdd, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(btnEdit, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(btnSave1, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addComponent(btnSave, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
         jPanel4Layout.setVerticalGroup(
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(btnEdit, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-            .addComponent(btnSave1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                .addComponent(btnSave, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(btnEdit, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(btnGeneratePDF, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addComponent(btnEventAdd)
         );
 
         jScrollPane2.setViewportView(txtAreaDescription);
@@ -905,31 +1164,36 @@ public class EventForm extends javax.swing.JInternalFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jLabel11, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addGroup(jPanel3Layout.createSequentialGroup()
-                                .addComponent(jLabel10, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jLabel18))))
-                    .addComponent(cmbPayments, javax.swing.GroupLayout.PREFERRED_SIZE, 142, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jLabel10, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addComponent(cmbCatalogType, javax.swing.GroupLayout.PREFERRED_SIZE, 142, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(cmbStatus, javax.swing.GroupLayout.PREFERRED_SIZE, 142, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jScrollPane2))
-                .addContainerGap())
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel3Layout.createSequentialGroup()
+                                .addGap(83, 83, 83)
+                                .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addGroup(jPanel3Layout.createSequentialGroup()
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jScrollPane2)))
+                        .addContainerGap())
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel18)
+                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel3Layout.createSequentialGroup()
-                .addContainerGap()
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addContainerGap()
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(dateChooserDeliveryDate, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(jLabel3)
                             .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                                 .addComponent(txtDeliveryHour, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(jLabel10)
-                                .addComponent(jLabel18)))
+                                .addComponent(jLabel10)))
                         .addGap(9, 9, 9)
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(dateChooserReturnDate, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -940,19 +1204,23 @@ public class EventForm extends javax.swing.JInternalFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jLabel9)
-                            .addComponent(cmbPayments, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 85, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(cmbCatalogType, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                     .addGroup(jPanel3Layout.createSequentialGroup()
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addGap(8, 8, 8)
+                        .addComponent(jLabel18)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 67, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel3Layout.createSequentialGroup()
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(cmbStatus, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(jLabel14))
-                        .addContainerGap(43, Short.MAX_VALUE))))
+                        .addContainerGap(56, Short.MAX_VALUE))
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
         );
 
         javax.swing.GroupLayout panelEventLayout = new javax.swing.GroupLayout(panelEvent);
@@ -981,7 +1249,7 @@ public class EventForm extends javax.swing.JInternalFrame {
                     .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jTabbedPane1)
+                .addComponent(jTabbedPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 320, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -1007,9 +1275,9 @@ public class EventForm extends javax.swing.JInternalFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void btnSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSaveActionPerformed
+    private void btnSaveCustomerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSaveCustomerActionPerformed
         saveCustomer();
-    }//GEN-LAST:event_btnSaveActionPerformed
+    }//GEN-LAST:event_btnSaveCustomerActionPerformed
 
     private void txtPhoneNumber1KeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtPhoneNumber1KeyPressed
         if (evt.getKeyCode() == ENTER_KEY) {
@@ -1044,12 +1312,12 @@ public class EventForm extends javax.swing.JInternalFrame {
     }//GEN-LAST:event_txtLastNameKeyReleased
 
     private void btnEditActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEditActionPerformed
-       
+        enableForm();
     }//GEN-LAST:event_btnEditActionPerformed
 
-    private void btnSave1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSave1ActionPerformed
-        
-    }//GEN-LAST:event_btnSave1ActionPerformed
+    private void btnSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSaveActionPerformed
+        save();
+    }//GEN-LAST:event_btnSaveActionPerformed
 
     private DetailEvent getDetailEventFromRowSelected () {
         return
@@ -1149,18 +1417,111 @@ public class EventForm extends javax.swing.JInternalFrame {
        showDetailEventAddToTableDialog(null,null);        
     }//GEN-LAST:event_btnAgregadosAddActionPerformed
 
+    private void editPaymentForm () {
+        if (this.tableFormatPayments.getSelectedRow() == - 1) {
+            JOptionPane.showMessageDialog(this, 
+                    ApplicationConstants.SELECT_A_ROW_NECCESSARY, MESSAGE_TITLE_ERROR, JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        txtPaymentImport.setText(
+                String.valueOf(
+                       tableFormatPayments.getValueAt(
+                               this.tableFormatPayments.getSelectedRow(),
+                               TableFormatPayments.Column.IMPORT.getNumber()
+                               )
+                )
+        );
+        
+        txtPaymentsConcept.setText(
+                String.valueOf(
+                       tableFormatPayments.getValueAt(
+                               this.tableFormatPayments.getSelectedRow(),
+                               TableFormatPayments.Column.CONCEPT.getNumber()
+                               )
+                )
+        );
+        
+        referenceRowToEditPaymentTable = String.valueOf(
+                       this.tableFormatPayments.getSelectedRow()
+                );
+    }
+    
     private void btnPaymentsEditActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPaymentsEditActionPerformed
-        // TODO add your handling code here:
+        editPaymentForm();
+        
     }//GEN-LAST:event_btnPaymentsEditActionPerformed
 
-    private void btnPaymentsAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPaymentsAddActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_btnPaymentsAddActionPerformed
-
     private void btnPaymentsSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPaymentsSaveActionPerformed
-        // TODO add your handling code here:
+       addRowToPaymentTable();
     }//GEN-LAST:event_btnPaymentsSaveActionPerformed
 
+    private void addRowToPaymentTable () {
+        
+        if (txtPaymentImport.getText().isEmpty()) {
+            JOptionPane.showMessageDialog(this, 
+                    ApplicationConstants.MISSING_DATA, MESSAGE_TITLE_ERROR, JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        if (referenceRowToEditPaymentTable != null) {
+            
+            tableFormatPayments.setValueAt(
+                    txtPaymentImport.getText(), 
+                    Integer.parseInt(referenceRowToEditPaymentTable),
+                    TableFormatPayments.Column.IMPORT.getNumber());
+            
+            tableFormatPayments.setValueAt(
+                    txtPaymentsConcept.getText(), 
+                    Integer.parseInt(referenceRowToEditPaymentTable),
+                    TableFormatPayments.Column.CONCEPT.getNumber());
+        } else {
+            DefaultTableModel temp = (DefaultTableModel) tableFormatPayments.getModel();
+            Object row[] = {
+                "0",
+                txtPaymentImport.getText(),
+                txtPaymentsConcept.getText(),
+                fastDateFormatMedium.format(new Date()),
+                LoginForm.userSession.getName() + " " + LoginForm.userSession.getLastName()
+            };
+            temp.addRow(row);
+            
+        }
+        referenceRowToEditPaymentTable = null;
+        cleanInputsPaymentForm();
+        total();
+    }
+    
+    private void enabledInputsPaymentForm () {
+        txtPaymentImport.setEnabled(true);
+        txtPaymentsConcept.setEnabled(true);
+        txtPaymentImport.requestFocus();
+    }
+    
+    private void cleanForm () {
+        
+        final Date now = new Date();
+        
+        lblFolio.setText("");
+        this.dateChooserDeliveryDate.setDate(now);
+        this.dateChooserReturnDate.setDate(now);
+        this.cmbCatalogType.setSelectedIndex(0);
+        this.cmbStatus.setSelectedIndex(0);
+        this.txtDeliveryHour.setText("");
+        this.txtReturnHour.setText("");
+        this.txtAreaDescription.setText("");
+        this.tableFormatDetail.format();
+        this.tableFormatPayments.format();
+        total();
+        
+    }
+    
+    private void cleanInputsPaymentForm () {
+        txtPaymentImport.setText("");
+        txtPaymentsConcept.setText("");
+        txtPaymentImport.requestFocus();
+    }
+    
     private void btnAgregadosDeleteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAgregadosDeleteActionPerformed
         if (this.tableFormatDetail.getSelectedRow() == - 1) {
             JOptionPane.showMessageDialog(this, 
@@ -1172,15 +1533,78 @@ public class EventForm extends javax.swing.JInternalFrame {
     }//GEN-LAST:event_btnAgregadosDeleteActionPerformed
 
     private void btnPaymentsDeleteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPaymentsDeleteActionPerformed
+        
+        try {
+            onlyAdminUserAccess();
+        } catch (UnAuthorizedException e) {
+            JOptionPane.showMessageDialog(this, 
+                    e.getMessage(), MESSAGE_TITLE_ERROR, JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+               
         if (this.tableFormatPayments.getSelectedRow() == - 1) {
             JOptionPane.showMessageDialog(this, 
                     ApplicationConstants.SELECT_A_ROW_NECCESSARY, MESSAGE_TITLE_ERROR, JOptionPane.WARNING_MESSAGE);
             return;
         }
-        ((DefaultTableModel)tableFormatPayments.getModel()).removeRow(this.tableFormatPayments.getSelectedRow());
-        total();        
+        
+        if (!paymentsEvent.isEmpty()) {
+            Long id = 
+                Long.parseLong(
+                        String.valueOf(this.tableFormatPayments.getValueAt(this.tableFormatPayments.getSelectedRow(), TableFormatPayments.Column.ID.getNumber())));
+            paymentsEvent.stream()
+                    .filter(t -> t.getId().equals(id))
+                    .peek(t -> t.setEnabled(false))
+                    .findFirst();
+                                
+        }
+        
+        int seleccion = Utility.showConfirmDialogYesNo();
+        if (seleccion == 0) {//presiono que si
+           ((DefaultTableModel)tableFormatPayments.getModel()).removeRow(this.tableFormatPayments.getSelectedRow());
+           total();
+        }
+        
+        
         
     }//GEN-LAST:event_btnPaymentsDeleteActionPerformed
+
+    private void btnGeneratePDFActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGeneratePDFActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_btnGeneratePDFActionPerformed
+
+    private void txtPaymentImportKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtPaymentImportKeyPressed
+        if (evt.getKeyCode() == ENTER_KEY) {
+            addRowToPaymentTable();
+        }
+    }//GEN-LAST:event_txtPaymentImportKeyPressed
+
+    private void txtPaymentsConceptKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtPaymentsConceptKeyPressed
+        if (evt.getKeyCode() == ENTER_KEY) {
+            addRowToPaymentTable();
+        }
+    }//GEN-LAST:event_txtPaymentsConceptKeyPressed
+
+    private void panelInnerPaymentsKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_panelInnerPaymentsKeyPressed
+        
+    }//GEN-LAST:event_panelInnerPaymentsKeyPressed
+
+    private void panelInnerPaymentsMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_panelInnerPaymentsMouseClicked
+        txtPaymentImport.requestFocus();
+    }//GEN-LAST:event_panelInnerPaymentsMouseClicked
+    private void newEventForm () {
+        btnEventAdd.setEnabled(false);
+        this.eventId = null;
+        cleanCustomerInputs();
+        cleanInputsPaymentForm();
+        cleanForm();
+        enableForm();
+        initFormWithNewEvent();
+    }
+    private void btnEventAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEventAddActionPerformed
+        newEventForm();
+    }//GEN-LAST:event_btnEventAddActionPerformed
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -1188,13 +1612,14 @@ public class EventForm extends javax.swing.JInternalFrame {
     private javax.swing.JButton btnAgregadosDelete;
     private javax.swing.JButton btnAgregadosEdit;
     private javax.swing.JButton btnEdit;
-    private javax.swing.JButton btnPaymentsAdd;
+    private javax.swing.JButton btnEventAdd;
+    private javax.swing.JButton btnGeneratePDF;
     private javax.swing.JButton btnPaymentsDelete;
     private javax.swing.JButton btnPaymentsEdit;
     private javax.swing.JButton btnPaymentsSave;
     private javax.swing.JButton btnSave;
-    private javax.swing.JButton btnSave1;
-    private javax.swing.JComboBox<CatalogTypeEvent> cmbPayments;
+    private javax.swing.JButton btnSaveCustomer;
+    private javax.swing.JComboBox<CatalogTypeEvent> cmbCatalogType;
     private javax.swing.JComboBox<CatalogStatusEvent> cmbStatus;
     private com.toedter.calendar.JDateChooser dateChooserDeliveryDate;
     private com.toedter.calendar.JDateChooser dateChooserReturnDate;
@@ -1247,7 +1672,7 @@ public class EventForm extends javax.swing.JInternalFrame {
     private javax.swing.JTextField txtEmail;
     private javax.swing.JTextField txtLastName;
     private javax.swing.JTextField txtName;
-    private javax.swing.JTextField txtPaymentImport;
+    private javax.swing.JFormattedTextField txtPaymentImport;
     private javax.swing.JTextField txtPaymentsConcept;
     private javax.swing.JTextField txtPhoneNumber1;
     private javax.swing.JTextField txtPhoneNumber2;
