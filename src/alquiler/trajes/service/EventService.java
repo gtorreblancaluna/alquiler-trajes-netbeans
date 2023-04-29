@@ -45,14 +45,15 @@ public class EventService {
             event.setUpdatedAt(now);
             event.setUser(LoginForm.userSession);
             event.setEnabled(true);
-            eventDao.save(event);
         } else {
             event.setUpdatedAt(now);
-            eventDao.update(event);
+            detailEventService.deleteById(event.getId());
         }
+        eventDao.save(event);
         
         detailEvent.stream().forEach(t -> t.setEvent(event));
         payments.stream().forEach(t -> t.setEvent(event));
+        
         
         detailEventService.save(detailEvent);
         paymentService.save(payments);

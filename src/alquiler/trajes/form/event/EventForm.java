@@ -1,6 +1,7 @@
 package alquiler.trajes.form.event;
 
 import alquiler.trajes.constant.ApplicationConstants;
+import static alquiler.trajes.constant.ApplicationConstants.DATE_LARGE;
 import static alquiler.trajes.constant.ApplicationConstants.DATE_MEDIUM;
 import static alquiler.trajes.constant.ApplicationConstants.ENTER_KEY;
 import static alquiler.trajes.constant.ApplicationConstants.MESSAGE_TITLE_ERROR;
@@ -18,7 +19,9 @@ import alquiler.trajes.form.login.LoginForm;
 import alquiler.trajes.service.CatalogStatusEventService;
 import alquiler.trajes.service.CatalogTypeEventService;
 import alquiler.trajes.service.CustomerService;
+import alquiler.trajes.service.DetailEventService;
 import alquiler.trajes.service.EventService;
+import alquiler.trajes.service.PaymentService;
 import alquiler.trajes.table.TableFormatDetail;
 import alquiler.trajes.table.TableFormatCustomers;
 import alquiler.trajes.table.TableFormatPayments;
@@ -30,7 +33,6 @@ import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeEvent;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -60,13 +62,15 @@ public class EventForm extends javax.swing.JInternalFrame {
     private final CatalogTypeEventService catalogTypeEventService;
     private final CatalogStatusEventService catalogStatusEventService;
     private final EventService eventService;
+    private final PaymentService paymentService;
+    private final DetailEventService detailEventService;
     private List<CatalogTypeEvent> types = new ArrayList<>();
     private List<CatalogStatusEvent> status = new ArrayList<>();
     private static final DecimalFormat decimalFormat = new DecimalFormat( "#,###,###,##0.00" );
     private final FastDateFormat fastDateFormatMedium = FastDateFormat.getInstance(DATE_MEDIUM);
+    private final FastDateFormat fastDateFormatLarge = FastDateFormat.getInstance(DATE_LARGE);
     private String referenceRowToEditPaymentTable = null;
-    private static final int POSITION_HOUR = 0;
-    private static final int POSITION_MINUTE = 1;
+
     private static final String REGEX_SPLIT_HOUR = ":";
     private static final String DELETE_CHARS_NUMBER = "$,";
     
@@ -77,6 +81,8 @@ public class EventForm extends javax.swing.JInternalFrame {
         this.customerService = CustomerService.getInstance();
         catalogTypeEventService = CatalogTypeEventService.getInstance();
         catalogStatusEventService = CatalogStatusEventService.getInstance();
+        paymentService = PaymentService.getInstance();
+        detailEventService = DetailEventService.getInstance();
         eventService = EventService.getInstance();
         customersTableFormat = new TableFormatCustomers();
         tableFormatDetail = new TableFormatDetail();
@@ -117,6 +123,9 @@ public class EventForm extends javax.swing.JInternalFrame {
         String[] deliveryHour = txtDeliveryHour.getText().split(REGEX_SPLIT_HOUR);
         String[] returnHour = txtReturnHour.getText().split(REGEX_SPLIT_HOUR);
         
+        this.event.setDeliveryHour(txtDeliveryHour.getText());
+        this.event.setReturnHour(txtReturnHour.getText());
+        
         Date deliveryDate = dateChooserDeliveryDate.getDate();
         Date returnDate = dateChooserReturnDate.getDate();
         
@@ -126,20 +135,12 @@ public class EventForm extends javax.swing.JInternalFrame {
         
         if(returnDate != null && deliveryDate.after(returnDate)){
            throw new InvalidDataException("Fecha de entrega debe ser menor a la fecha de devolución.");
-        }
-        
-        Calendar calendarDeliveryDate = Calendar.getInstance();
-        calendarDeliveryDate.setTime(deliveryDate);
-        calendarDeliveryDate.set(Calendar.HOUR_OF_DAY, Integer.parseInt(deliveryHour[POSITION_HOUR]));
-        calendarDeliveryDate.set(Calendar.MINUTE, Integer.parseInt(deliveryHour[POSITION_MINUTE]));
-        event.setDeliveryDate(calendarDeliveryDate.getTime());
+        }        
+
+        event.setDeliveryDate(Utility.setHourAndMinutesFromDate(deliveryHour,deliveryDate));
         
         if (returnHourIsValid) {
-            Calendar calendarReturnDate = Calendar.getInstance();
-            calendarReturnDate.setTime(returnDate);
-            calendarReturnDate.set(Calendar.HOUR_OF_DAY, Integer.parseInt(returnHour[POSITION_HOUR]));
-            calendarReturnDate.set(Calendar.MINUTE, Integer.parseInt(returnHour[POSITION_MINUTE]));
-            event.setReturnDate(calendarReturnDate.getTime());
+            event.setReturnDate(Utility.setHourAndMinutesFromDate(returnHour,returnDate));
         }
         
         
@@ -207,7 +208,6 @@ public class EventForm extends javax.swing.JInternalFrame {
                     .findFirst();
             }
         }
-        fillTablePayments(paymentsEvent);
     }
     
     private void fillTablePayments (List<Payment> list) {
@@ -277,11 +277,9 @@ public class EventForm extends javax.swing.JInternalFrame {
             getEventFromInputs();
             getDetailEventFromTable();
             getPaymentsFromTable();
-            eventService.save(event,detailEvent,paymentsEvent);
-            lblFolio.setText(String.valueOf(event.getId()));
-            disableForm();
-            btnEventAdd.setEnabled(true);
-                        
+            eventService.save(event,detailEvent,paymentsEvent);        
+            this.eventId = this.event.getId();
+            initFormWithExistentEvent();
         } catch (BusinessException e) {
             JOptionPane.showMessageDialog(this, e.getMessage(), MESSAGE_TITLE_ERROR, JOptionPane.ERROR_MESSAGE);  
         }
@@ -334,15 +332,76 @@ public class EventForm extends javax.swing.JInternalFrame {
     }
     
     private void initFormWithExistentEvent () {
+        
         fillCatalogTypeEventService();
         lblInfoUser.setText("Atendió:");
-        getEventById(this.eventId);
-        tabPaneMain.setSelectedIndex(INDEX_EVENT_PANE);
-        disableForm();
+        try {
+            this.event = eventService.findById(this.eventId);
+            lblUser.setText(this.event.getUser().getName()+" "+this.event.getUser().getLastName());
+            lblEventCreatedAt.setText("Fecha de elaboración: "+fastDateFormatLarge.format(this.event.getCreatedAt()));
+            tabPaneMain.setSelectedIndex(INDEX_EVENT_PANE);
+            disableForm();
+            btnEventAdd.setEnabled(true);
+            lblFolio.setText(String.valueOf(event.getId()));
+
+            fillInputsFormFromEvent();
+            cmbCatalogType.setSelectedItem(this.event.getCatalogTypeEvent());
+            cmbStatus.setSelectedItem(this.event.getCatalogStatusEvent());
+            fillTablePaymentsFromEventId();
+            fillTableDetailFromEvent();
+            total();            
+        } catch (BusinessException e) {
+           log.error(e);
+           JOptionPane.showMessageDialog(this, e.getMessage(), ApplicationConstants.MESSAGE_UNEXPECTED_ERROR, JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+    // is called when event exist to edit.
+    private void fillInputsFormFromEvent () {
+        
+        dateChooserDeliveryDate.setDate(this.event.getDeliveryDate());
+        txtDeliveryHour.setText(this.event.getDeliveryHour());
+
+        if (this.event.getReturnDate() != null) {
+            dateChooserReturnDate.setDate(this.event.getReturnDate());
+            txtReturnHour.setText(this.event.getReturnHour());
+        } else {
+            dateChooserReturnDate.setDate(null);
+            txtReturnHour.setText("");
+        }
+        this.txtAreaDescription.setText(this.event.getDescription());
+        
+    }
+    
+    private void fillTableDetailFromEvent () {
+        try {
+            this.detailEvent = detailEventService.getAll(this.event.getId());
+            this.tableFormatDetail.format();
+            for (DetailEvent detail : this.detailEvent) {
+                addDetailToTable(detail,null);
+            }
+        } catch (BusinessException e) {
+            log.error(e);
+            JOptionPane.showMessageDialog(this, e.getMessage(), MESSAGE_TITLE_ERROR, JOptionPane.ERROR_MESSAGE); 
+        }
+    }
+    
+    private void fillTablePaymentsFromEventId () {
+        this.paymentsEvent = new ArrayList<>();
+        try {
+            this.paymentsEvent = paymentService.getAll(this.event.getId());
+            fillTablePayments(this.paymentsEvent);
+        } catch (BusinessException e) {
+            log.error(e);
+            JOptionPane.showMessageDialog(this, e.getMessage(), MESSAGE_TITLE_ERROR, JOptionPane.ERROR_MESSAGE); 
+        }
+        
+        
     }
     
     private void initFormWithNewEvent () {
         lblInfoUser.setText("Atiende:");
+        lblEventCreatedAt.setText("");
         btnEdit.setVisible(false);
         event = new Event();
         tabPaneMain.setEnabledAt(INDEX_EVENT_PANE, false);
@@ -350,6 +409,7 @@ public class EventForm extends javax.swing.JInternalFrame {
         Utility.setTimeout(() -> this.txtName.requestFocus(), 500);
         lblUser.setText(LoginForm.userSession.getName() + " " + LoginForm.userSession.getLastName());
         paymentsEvent = new ArrayList<>();
+        this.dateChooserDeliveryDate.setDate(new Date());
     }
     
     private void addActionListenerToDateChoosers () {
@@ -403,7 +463,9 @@ public class EventForm extends javax.swing.JInternalFrame {
                     tabPaneMain.setSelectedIndex(INDEX_EVENT_PANE);
                     cleanCustomerInputs();
                     lblCustomer.setText(opCustomer.get().getName() + " " + opCustomer.get().getLastName());
-                    fillCatalogTypeEventService();
+                    new Thread(() -> {
+                        fillCatalogTypeEventService();
+                    }).start();
                 }
                 
               }
@@ -439,8 +501,8 @@ public class EventForm extends javax.swing.JInternalFrame {
             tabPaneMain.setEnabledAt(INDEX_EVENT_PANE, true);
             tabPaneMain.setSelectedIndex(INDEX_EVENT_PANE);
             lblCustomer.setText(customerFromInputs.getName()+" "+customerFromInputs.getLastName());
+            btnSave.setEnabled(true);
             cleanCustomerInputs();
-            searchAndFillTableCustomers();
         } catch (BusinessException e) {
             JOptionPane.showMessageDialog(this, e.getMessage(),
                     ApplicationConstants.MESSAGE_MISSING_PARAMETERS, JOptionPane.ERROR_MESSAGE);
@@ -477,11 +539,7 @@ public class EventForm extends javax.swing.JInternalFrame {
             this.txtName.requestFocus();
         }
     }
-    
-    private void getEventById (Long id) {
         
-    }
-    
     private void searchAndFillTableCustomers () {
         try {
             List<Customer> filterCustomers =
@@ -580,6 +638,7 @@ public class EventForm extends javax.swing.JInternalFrame {
         txtAreaDescription = new javax.swing.JTextPane();
         cmbStatus = new javax.swing.JComboBox<>();
         jLabel14 = new javax.swing.JLabel();
+        lblEventCreatedAt = new javax.swing.JLabel();
 
         panelCustomers.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
 
@@ -1181,6 +1240,9 @@ public class EventForm extends javax.swing.JInternalFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jLabel18)
                         .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addComponent(lblEventCreatedAt, javax.swing.GroupLayout.PREFERRED_SIZE, 465, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 0, Short.MAX_VALUE))
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -1216,11 +1278,12 @@ public class EventForm extends javax.swing.JInternalFrame {
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(cmbStatus, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(jLabel14))
-                        .addContainerGap(56, Short.MAX_VALUE))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(lblEventCreatedAt, javax.swing.GroupLayout.PREFERRED_SIZE, 20, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 14, Short.MAX_VALUE)
                         .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+                        .addContainerGap(32, Short.MAX_VALUE))))
         );
 
         javax.swing.GroupLayout panelEventLayout = new javax.swing.GroupLayout(panelEvent);
@@ -1249,7 +1312,7 @@ public class EventForm extends javax.swing.JInternalFrame {
                     .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jTabbedPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 320, Short.MAX_VALUE)
+                .addComponent(jTabbedPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 324, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -1653,6 +1716,7 @@ public class EventForm extends javax.swing.JInternalFrame {
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JTabbedPane jTabbedPane1;
     private javax.swing.JLabel lblCustomer;
+    private javax.swing.JLabel lblEventCreatedAt;
     private javax.swing.JLabel lblFolio;
     private javax.swing.JLabel lblInfoUser;
     private javax.swing.JLabel lblPayments;

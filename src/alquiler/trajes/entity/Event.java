@@ -3,7 +3,6 @@ package alquiler.trajes.entity;
 import alquiler.trajes.constant.ColumnDefinitionConstant;
 import lombok.*;
 import java.util.Date;
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -48,8 +47,14 @@ public class Event {
     @Column(name="delivery_date",nullable = false, updatable = false)
     private Date deliveryDate;
     
-    @Column(name="return_date",nullable = false, updatable = false)
+    @Column(name="delivery_hour",nullable = false, updatable = false)
+    private String deliveryHour;
+    
+    @Column(name="return_date",updatable = false)
     private Date returnDate;
+    
+    @Column(name="return_hour",updatable = false)
+    private String returnHour;
 
     @Column(nullable = false, length = 755)
     private String description;

@@ -10,7 +10,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.text.Normalizer;
-import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Optional;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -20,6 +21,17 @@ import javax.swing.JTable;
 
 
 public abstract class Utility {
+    private static final int POSITION_HOUR = 0;
+    private static final int POSITION_MINUTE = 1;
+    
+    public static Date setHourAndMinutesFromDate (String[] hourAndMinute, Date date) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        calendar.set(Calendar.HOUR_OF_DAY, Integer.parseInt(hourAndMinute[POSITION_HOUR]));
+        calendar.set(Calendar.MINUTE, Integer.parseInt(hourAndMinute[POSITION_MINUTE]));
+        Date returnDate = calendar.getTime();
+        return returnDate;
+    }
     
     public static int showConfirmDialogYesNo () {
         // return 0 when yes button pusehd.
@@ -30,11 +42,11 @@ public abstract class Utility {
                             JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null, new Object[]{"Si", "No"}, "Si"
                 );
         
-    }
+    }    
+
     
-    private static final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-    
-        public static String deleteCharacters(String s_cadena, String s_caracteres) {
+    public static String deleteCharacters(String s_cadena, String s_caracteres) {
+        
         String nueva_cadena = "";
         Character caracter = null;
         boolean valido = true;

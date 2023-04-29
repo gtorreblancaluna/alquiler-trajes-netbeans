@@ -32,7 +32,7 @@ public class DetailEventDao implements Dao<DetailEvent> {
     @Override
     public List<DetailEvent> getAll() throws BusinessException{
         try {
-            return em.createQuery("SELECT u FROM DetailEvent u WHERE enabled = '1' ", DetailEvent.class)               
+            return em.createQuery("SELECT u FROM DetailEvent u ", DetailEvent.class)               
                 .getResultList();
         } catch (NoResultException e) {
             throw new NoDataFoundException(ApplicationConstants.NO_FOUND_LIST_REGISTER);
@@ -41,9 +41,7 @@ public class DetailEventDao implements Dao<DetailEvent> {
 
     public List<DetailEvent> getAll(Long eventId) throws BusinessException{
         try {
-            return em.createQuery("SELECT d FROM DetailEvent d WHERE d.enabled = '1' "
-                    + "AND d.event.id = :eventId"
-                    + "", DetailEvent.class)
+            return em.createQuery("SELECT d FROM DetailEvent d WHERE d.event.id = :eventId", DetailEvent.class)
                     .setParameter("eventId", eventId)
                 .getResultList();
         } catch (NoResultException e) {
@@ -77,7 +75,7 @@ public class DetailEventDao implements Dao<DetailEvent> {
     public void deleteAllByEvent(Long eventId) {
         executeInsideTransaction(entityManager -> {
             entityManager.createQuery("DELETE FROM DetailEvent d WHERE d.event.id = :eventId")
-                    .setParameter("eventId", eventId);
+                    .setParameter("eventId", eventId).executeUpdate();
         });
     }
     
@@ -86,7 +84,7 @@ public class DetailEventDao implements Dao<DetailEvent> {
         try {
             tx.begin();
             action.accept(em);
-            tx.commit(); 
+            tx.commit();
         }
         catch (RuntimeException e) {
             tx.rollback();

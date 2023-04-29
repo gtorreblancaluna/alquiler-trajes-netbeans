@@ -26,11 +26,14 @@ public class DetailEventService {
             return new DetailEventService();
         }
         return SINGLE_INSTANCE;
-    }   
+    }
+    
+    public void deleteById (Long eventId) throws BusinessException {
+        detailEventDao.deleteAllByEvent(eventId);
+    }
     
     public void save (List<DetailEvent> details) throws BusinessException {
-        
-        detailEventDao.deleteAllByEvent(details.get(0).getId());
+
         details.stream().forEach(t -> {            
             detailEventDao.save(t);
         });

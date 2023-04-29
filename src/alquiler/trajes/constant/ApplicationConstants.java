@@ -4,6 +4,8 @@ public interface ApplicationConstants {
     
     public static final String DATE_MEDIUM = "dd MMM yyyy";
     
+    public static final String DATE_LARGE = "EEEEE dd MMMM yyyy";
+    
     public static final String ARIAL = "Arial";
     public static final int ENTER_KEY = 10;
     
