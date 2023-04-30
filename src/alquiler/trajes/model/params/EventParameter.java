@@ -1,13 +1,22 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package alquiler.trajes.model.params;
 
-/**
- *
- * @author 107209781
- */
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class EventParameter {
+    
+    private String initDeliveryDate;
+    private String endDeliveryDate;
+    private String initReturnDate;
+    private String endReturnDate;
+    private String customerName;
+    private Long eventId;
+    private String description;
     
 }

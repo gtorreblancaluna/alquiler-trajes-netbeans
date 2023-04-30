@@ -10,8 +10,10 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.text.Normalizer;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -23,6 +25,25 @@ import javax.swing.JTable;
 public abstract class Utility {
     private static final int POSITION_HOUR = 0;
     private static final int POSITION_MINUTE = 1;
+    
+    public static List<String> getColumnsIdByBooleanSelected (JTable table, int columnNumberBoolean, int columnNumberId) {
+        List<String> columnsSelected = new ArrayList<>();
+
+         for (int i = 0; i < table.getRowCount(); i++) {
+             if (Boolean.parseBoolean(table.getValueAt(i, columnNumberBoolean).toString())) {
+                 columnsSelected.add(
+                         table.getValueAt(i, columnNumberId).toString()
+                 );
+             }
+         }
+         return columnsSelected;
+    }
+    
+    public static void selectAllCheckboxInTable (JTable table, int column, boolean checked) {
+       for (int i = 0 ; i < table.getRowCount() ; i++) {
+            table.setValueAt(checked, i, column);
+       }
+    }
     
     public static Date setHourAndMinutesFromDate (String[] hourAndMinute, Date date) {
         Calendar calendar = Calendar.getInstance();

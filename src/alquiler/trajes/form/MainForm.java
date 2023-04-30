@@ -2,6 +2,7 @@ package alquiler.trajes.form;
 
 import alquiler.trajes.form.config.LookAndFeelForm;
 import alquiler.trajes.form.customer.CustomersForm;
+import alquiler.trajes.form.event.ConsultEventsForm;
 import alquiler.trajes.form.event.EventForm;
 import alquiler.trajes.form.login.LoginForm;
 import alquiler.trajes.form.user.UsersForm;
@@ -12,6 +13,7 @@ public class MainForm extends javax.swing.JFrame {
     private UsersForm usersForm;
     private CustomersForm customersForm;
     private EventForm eventForm;
+    private ConsultEventsForm consultEventsForm;
 
     public MainForm() {
         initComponents();
@@ -110,6 +112,11 @@ public class MainForm extends javax.swing.JFrame {
         jbtnConsultEvents.setIcon(new javax.swing.ImageIcon(getClass().getResource("/alquiler/trajes/img/img32/calendario-32.png"))); // NOI18N
         jbtnConsultEvents.setToolTipText("Consultar eventos");
         jbtnConsultEvents.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jbtnConsultEvents.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jbtnConsultEventsActionPerformed(evt);
+            }
+        });
 
         jLabel3.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabel3.setText("Consultar eventos");
@@ -503,6 +510,10 @@ public class MainForm extends javax.swing.JFrame {
         showEventForm();
     }//GEN-LAST:event_jbtnAddEventActionPerformed
 
+    private void jbtnConsultEventsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnConsultEventsActionPerformed
+        showConsultEventsForm();
+    }//GEN-LAST:event_jbtnConsultEventsActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -538,6 +549,13 @@ public class MainForm extends javax.swing.JFrame {
         });
     }
     
+    private void showConsultEventsForm () {
+        consultEventsForm = new ConsultEventsForm();
+        consultEventsForm.setLocation(this.getWidth() / 2 - consultEventsForm.getWidth() / 2, this.getHeight() / 2 - consultEventsForm.getHeight() / 2 - 20);
+        jDesktopPane1.add(consultEventsForm);
+        consultEventsForm.show();
+    }
+    
     private void showCustomersForm () {
         customersForm = new CustomersForm();
         customersForm.setLocation(this.getWidth() / 2 - customersForm.getWidth() / 2, this.getHeight() / 2 - customersForm.getHeight() / 2 - 20);
@@ -567,7 +585,7 @@ public class MainForm extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JDesktopPane jDesktopPane1;
+    public static javax.swing.JDesktopPane jDesktopPane1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel2;

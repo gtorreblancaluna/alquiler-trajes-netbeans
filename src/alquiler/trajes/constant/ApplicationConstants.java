@@ -2,9 +2,13 @@ package alquiler.trajes.constant;
 
 public interface ApplicationConstants {
     
-    public static final String DATE_MEDIUM = "dd MMM yyyy";
+    public static final String START_DAY_HOUR_MINUTES = " 00:01";
+    public static final String END_DAY_HOUR_MINUTES = " 23:59";
     
+    public static final String DECIMAL_FORMAT = "#,###,###,##0.00" ;
+    public static final String DATE_MEDIUM = "dd MMM yyyy";
     public static final String DATE_LARGE = "EEEEE dd MMMM yyyy";
+    public static final String DATE_FORMAT_FOR_SQL_QUERY = "yyyy-MM-dd";
     
     public static final String ARIAL = "Arial";
     public static final int ENTER_KEY = 10;
@@ -20,6 +24,7 @@ public interface ApplicationConstants {
     public static final String TITLE_USERS_FORM = "Usuarios.";
     public static final String TITLE_CUSTOMERS_FORM = "Clientes.";
     public static final String TITLE_EVENTS_FORM = "Eventos.";
+    public static final String TITLE_CONSULT_EVENTS_FORM = "Consultar eventos.";
     public static final String TITLE_DETAIL_EVENT_DIALOG_FORM = "Detalle evento.";
        
     public static final String SELECT_A_ROW_TO_GENERATE_REPORT = "Selecciona una fila para generar el reporte...";
@@ -40,6 +45,7 @@ public interface ApplicationConstants {
     public static final String MESSAGE_NOT_PERMISIONS_ADMIN = "No cuentas con permisos de administrador.";
     public static final String MESSAGE_MISSING_PARAMETERS = "Faltan parametros.";
     public static final String MESSAGE_UNEXPECTED_ERROR = "Ocurri\u00F3 un error inesperado.";
+    public static final String MESSAGE_NUMBER_FORMAT_ERROR = "Introduce un numero valido.";
     public static final String MESSAGE_TITLE_ERROR = "Error";
     public static final String MESSAGE_TITLE_DETELE_RECORD_CONFIRM = "Confirme";
     public static final String NO_DATA_FOUND_EXCEPTION = "No se obtuvieron registros.";

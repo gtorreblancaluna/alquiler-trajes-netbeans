@@ -3,6 +3,7 @@ package alquiler.trajes.form.event;
 import alquiler.trajes.constant.ApplicationConstants;
 import static alquiler.trajes.constant.ApplicationConstants.DATE_LARGE;
 import static alquiler.trajes.constant.ApplicationConstants.DATE_MEDIUM;
+import static alquiler.trajes.constant.ApplicationConstants.DECIMAL_FORMAT;
 import static alquiler.trajes.constant.ApplicationConstants.ENTER_KEY;
 import static alquiler.trajes.constant.ApplicationConstants.MESSAGE_TITLE_ERROR;
 import alquiler.trajes.entity.CatalogStatusEvent;
@@ -66,7 +67,7 @@ public class EventForm extends javax.swing.JInternalFrame {
     private final DetailEventService detailEventService;
     private List<CatalogTypeEvent> types = new ArrayList<>();
     private List<CatalogStatusEvent> status = new ArrayList<>();
-    private static final DecimalFormat decimalFormat = new DecimalFormat( "#,###,###,##0.00" );
+    private static final DecimalFormat decimalFormat = new DecimalFormat(DECIMAL_FORMAT);
     private final FastDateFormat fastDateFormatMedium = FastDateFormat.getInstance(DATE_MEDIUM);
     private final FastDateFormat fastDateFormatLarge = FastDateFormat.getInstance(DATE_LARGE);
     private String referenceRowToEditPaymentTable = null;
@@ -109,16 +110,10 @@ public class EventForm extends javax.swing.JInternalFrame {
     }
     
     private void getEventDateFromInputs () throws InvalidDataException{
-        boolean returnHourIsValid = false;
+        
         if (!Utility.validateHour(txtDeliveryHour.getText())) {
             throw new InvalidDataException("Ingresa una hora de entrega valida.");
-        }
-        
-        if (dateChooserReturnDate.getDate() != null && !Utility.validateHour(txtReturnHour.getText())) {
-            throw new InvalidDataException("Ingresa una hora de devolución valida.");
-        } else {
-            returnHourIsValid = true;
-        }
+        }        
         
         String[] deliveryHour = txtDeliveryHour.getText().split(REGEX_SPLIT_HOUR);
         String[] returnHour = txtReturnHour.getText().split(REGEX_SPLIT_HOUR);
@@ -139,9 +134,12 @@ public class EventForm extends javax.swing.JInternalFrame {
 
         event.setDeliveryDate(Utility.setHourAndMinutesFromDate(deliveryHour,deliveryDate));
         
-        if (returnHourIsValid) {
+        if (dateChooserReturnDate.getDate() != null && !Utility.validateHour(txtReturnHour.getText())) {
+            throw new InvalidDataException("Ingresa una hora de devolución valida.");
+        } else if (dateChooserReturnDate.getDate() != null){
             event.setReturnDate(Utility.setHourAndMinutesFromDate(returnHour,returnDate));
         }
+        
         
         
     }
@@ -1323,9 +1321,8 @@ public class EventForm extends javax.swing.JInternalFrame {
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(tabPaneMain, javax.swing.GroupLayout.PREFERRED_SIZE, 1042, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(tabPaneMain, javax.swing.GroupLayout.PREFERRED_SIZE, 1042, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
