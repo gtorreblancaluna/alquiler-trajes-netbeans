@@ -3,7 +3,6 @@ package alquiler.trajes.dao;
 import alquiler.trajes.config.PersistenceManager;
 import alquiler.trajes.constant.ApplicationConstants;
 import alquiler.trajes.entity.Event;
-import alquiler.trajes.entity.User;
 import alquiler.trajes.exceptions.BusinessException;
 import alquiler.trajes.exceptions.NoDataFoundException;
 import alquiler.trajes.model.params.EventParameter;

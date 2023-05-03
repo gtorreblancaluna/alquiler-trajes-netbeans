@@ -7,8 +7,9 @@ public enum CatalogStatusEventEnum {
     
     APARTADO(1L,"Apartado"),
     IN_RENT(2L,"En renta"),
-    CANCELED(3L,"Cancelado"),
-    FINISHED(4L,"Finalizado");
+    PENDING(3L,"Pendiente"),
+    CANCELED(4L,"Cancelado"),
+    FINISHED(5L,"Finalizado");
     
     private Long id;
     private String name;

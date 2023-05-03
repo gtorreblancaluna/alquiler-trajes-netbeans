@@ -15,10 +15,13 @@ public class EventResult {
     private Integer id;
     private String description;
     private String customer;
+    private String customerPhones;
     private Timestamp deliveryDate;
     private String deliveryHour;
     private Timestamp returnDate;
     private String returnHour;
+    private String typeEvent;
+    private String statusEvent;
     private Double payments;
     private Double subTotal;
     private Timestamp createdAt;

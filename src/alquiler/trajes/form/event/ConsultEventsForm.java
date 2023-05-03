@@ -4,24 +4,37 @@ import alquiler.trajes.constant.ApplicationConstants;
 import static alquiler.trajes.constant.ApplicationConstants.DATE_FORMAT_FOR_SQL_QUERY;
 import static alquiler.trajes.constant.ApplicationConstants.DATE_LARGE;
 import static alquiler.trajes.constant.ApplicationConstants.DECIMAL_FORMAT;
+import static alquiler.trajes.constant.ApplicationConstants.EMPTY_STRING_TXT_FIELD;
 import static alquiler.trajes.constant.ApplicationConstants.END_DAY_HOUR_MINUTES;
 import static alquiler.trajes.constant.ApplicationConstants.ENTER_KEY;
 import static alquiler.trajes.constant.ApplicationConstants.MESSAGE_NUMBER_FORMAT_ERROR;
-import static alquiler.trajes.constant.ApplicationConstants.SELECT_A_ROW_TO_GENERATE_REPORT;
+import static alquiler.trajes.constant.ApplicationConstants.PATH_NAME_EVENT_REPORT_VERTICAL_A5;
+import static alquiler.trajes.constant.ApplicationConstants.PDF_NAME_EVENT_REPORT_VERTICAL_A5;
+import static alquiler.trajes.constant.ApplicationConstants.SELECT_A_ROW_NECCESSARY;
 import static alquiler.trajes.constant.ApplicationConstants.START_DAY_HOUR_MINUTES;
 import static alquiler.trajes.constant.ApplicationConstants.TITLE_CONSULT_EVENTS_FORM;
+import alquiler.trajes.constant.GeneralInfoEnum;
+import alquiler.trajes.entity.Event;
 import alquiler.trajes.exceptions.BusinessException;
 import alquiler.trajes.exceptions.InvalidDataException;
 import alquiler.trajes.form.MainForm;
 import alquiler.trajes.model.params.EventParameter;
 import alquiler.trajes.model.params.result.EventResult;
 import alquiler.trajes.service.EventResultService;
+import alquiler.trajes.service.EventService;
+import alquiler.trajes.service.GeneralInfoService;
 import alquiler.trajes.table.TableConsultEvents;
+import alquiler.trajes.util.JasperPrintUtil;
 import alquiler.trajes.util.Utility;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.text.DecimalFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.swing.JOptionPane;
+import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
 import org.apache.commons.lang3.time.FastDateFormat;
 
@@ -30,6 +43,9 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
 
     private final TableConsultEvents tableConsultEvents;
     private final EventResultService eventResultService;
+    private final EventService eventService;
+    private final GeneralInfoService generalInfoService;
+    private final JasperPrintUtil jasperPrintUtil;
     private final FastDateFormat fastDateFormatLarge = FastDateFormat.getInstance(DATE_LARGE);
     private static final DecimalFormat decimalFormat = new DecimalFormat(DECIMAL_FORMAT);
     private final FastDateFormat fastDateFormatSqlQuery = FastDateFormat.getInstance(DATE_FORMAT_FOR_SQL_QUERY);
@@ -40,10 +56,92 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
         this.setTitle(TITLE_CONSULT_EVENTS_FORM);
         this.setClosable(Boolean.TRUE);
         eventResultService = EventResultService.getInstance();
+        generalInfoService = GeneralInfoService.getInstance();
+        eventService = EventService.getInstance();
         tableConsultEvents = new TableConsultEvents();
+        jasperPrintUtil = JasperPrintUtil.getInstance();
         Utility.addJtableToPane(719, 451, this.panelTable, tableConsultEvents);
         dateChooserInitDeliveryDate.setDate(new Date());
         search(false);
+        addEventListenerToTable();
+    }
+    
+    private String getPaymentsFromTableId (String id) {
+        
+        String payments = "0";
+        
+        for (int i = 0; i < tableConsultEvents.getRowCount(); i++) {
+            if (id.equals(
+                    String.valueOf(tableConsultEvents.getValueAt(i, TableConsultEvents.Column.ID.getNumber())))) {
+                payments = String.valueOf(
+                        tableConsultEvents.getValueAt(i, TableConsultEvents.Column.PAYMENTS.getNumber()));
+            }
+        }
+        return payments;
+    }
+    
+    private String getSubtotalFromTableId (String id) {
+        
+        String payments = "0";
+        
+        for (int i = 0; i < tableConsultEvents.getRowCount(); i++) {
+            if (id.equals(
+                    String.valueOf(tableConsultEvents.getValueAt(i, TableConsultEvents.Column.ID.getNumber())))) {
+                payments = String.valueOf(
+                        tableConsultEvents.getValueAt(i, TableConsultEvents.Column.SUB_TOTAL.getNumber()));
+            }
+        }
+        return payments;
+    }
+    
+    private void generateEventPDF () {        
+        
+        
+        Map parameters = new HashMap<>();
+        
+        try {
+            String id = getEventIdFromTableOnlyOneRowSelected();
+            String payments = getPaymentsFromTableId(id);
+            String subtotal = getSubtotalFromTableId(id);
+            Event event = eventService.findById(Long.parseLong(id));
+            parameters.put("ID", event.getId().toString());
+            parameters.put("FOLIO", event.getId().toString());
+            parameters.put("USER_NAME", event.getUser().getName()+" "+event.getUser().getLastName());
+            parameters.put("CUSTOMER_NAME", event.getCustomer().getName()+" "+event.getCustomer().getLastName());
+            parameters.put("TYPE_EVENT", event.getCatalogTypeEvent().getName());
+            parameters.put("STATUS_EVENT", event.getCatalogStatusEvent().getName());
+            parameters.put("DELIVERY_DATE", fastDateFormatLarge.format(event.getDeliveryDate())+" "+event.getDeliveryHour()+" Hrs.");
+            parameters.put("RETURN_DATE", fastDateFormatLarge.format(event.getReturnDate())+" "+event.getReturnHour()+ " Hrs.");
+            parameters.put("CREATED_AT_DATE", fastDateFormatLarge.format(event.getCreatedAt()));
+            parameters.put("DESCRIPTION", event.getDescription());
+            parameters.put("PAYMENTS", decimalFormat.format(Float.parseFloat(payments)));
+            parameters.put("SUBTOTAL", decimalFormat.format(Float.parseFloat(subtotal)));
+            parameters.put("TOTAL", decimalFormat.format(Float.parseFloat(subtotal)-Float.parseFloat(payments)));
+            parameters.put("COMPANY_NAME", generalInfoService.getByKey(GeneralInfoEnum.COMPANY_NAME.getKey()));
+            parameters.put("INFO_FOOTER_PDF_A5", generalInfoService.getByKey(GeneralInfoEnum.INFO_FOOTER_PDF_A5.getKey()));
+            jasperPrintUtil.showPDF(parameters, PATH_NAME_EVENT_REPORT_VERTICAL_A5, PDF_NAME_EVENT_REPORT_VERTICAL_A5);
+        } catch (BusinessException e) {
+            log.error(e);
+           JOptionPane.showMessageDialog(
+                   this, e.getMessage(),
+                   ApplicationConstants.MESSAGE_UNEXPECTED_ERROR,
+                   JOptionPane.ERROR_MESSAGE);  
+        }
+    }
+    
+    private void addEventListenerToTable () {
+        tableConsultEvents.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent e) {
+              if (e.getClickCount() == 2) {
+                  
+                    JTable target = (JTable)e.getSource();
+                    showEventForm(
+                            String.valueOf(target.getValueAt(target.getSelectedRow(),
+                                    TableConsultEvents.Column.ID.getNumber())));
+                    
+              }
+            }
+        });
     }
     
     private EventParameter getEventParameterFromInputs () throws InvalidDataException{
@@ -96,8 +194,11 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
                     result.getId(),
                     result.getDescription(),
                     result.getCustomer(),
+                    result.getCustomerPhones(),
                     fastDateFormatLarge.format(result.getDeliveryDate()) + " "+ result.getDeliveryHour(),
                     fastDateFormatLarge.format(result.getReturnDate())+ " " + result.getReturnHour(),
+                    result.getTypeEvent(),
+                    result.getStatusEvent(),
                     decimalFormat.format(result.getPayments()),
                     decimalFormat.format(result.getSubTotal()),
                     decimalFormat.format(result.getSubTotal() - result.getPayments())
@@ -236,11 +337,16 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
         });
 
         btnCleanForm.setIcon(new javax.swing.ImageIcon(getClass().getResource("/alquiler/trajes/img/img32/limpiar-32.png"))); // NOI18N
-        btnCleanForm.setToolTipText("Buscar");
+        btnCleanForm.setToolTipText("Limpiar formulario");
         btnCleanForm.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnCleanForm.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnCleanFormActionPerformed(evt);
+            }
+        });
 
         btnGoToEventForm.setIcon(new javax.swing.ImageIcon(getClass().getResource("/alquiler/trajes/img/img32/fiesta-de-cumpleanos-32.png"))); // NOI18N
-        btnGoToEventForm.setToolTipText("Buscar");
+        btnGoToEventForm.setToolTipText("Editar");
         btnGoToEventForm.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         btnGoToEventForm.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -249,7 +355,7 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
         });
 
         btnGeneratePDF.setIcon(new javax.swing.ImageIcon(getClass().getResource("/alquiler/trajes/img/img32/descargar-pdf-32.png"))); // NOI18N
-        btnGeneratePDF.setToolTipText("Editar");
+        btnGeneratePDF.setToolTipText("Ver PDF");
         btnGeneratePDF.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         btnGeneratePDF.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -275,19 +381,18 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
                             .addComponent(jLabel2))))
                 .addGap(18, 18, 18)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel6)
-                    .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(txtFolio, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 51, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(18, 18, 18)
-                        .addComponent(btnSearch, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(btnCleanForm, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(btnGoToEventForm, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(btnGeneratePDF, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                        .addComponent(txtFolio, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 51, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jLabel6))
+                .addGap(18, 18, 18)
+                .addComponent(btnSearch, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(btnCleanForm, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(btnGoToEventForm, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(btnGeneratePDF, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(124, Short.MAX_VALUE))
         );
         jPanel2Layout.setVerticalGroup(
@@ -419,7 +524,7 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
                 );
         
         if (ids.isEmpty() || (!ids.isEmpty() && ids.size() > 1)) {
-            throw new BusinessException(SELECT_A_ROW_TO_GENERATE_REPORT);
+            throw new BusinessException(SELECT_A_ROW_NECCESSARY);
         }
         
         return ids.get(0);
@@ -438,9 +543,25 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
         
     }//GEN-LAST:event_btnGoToEventFormActionPerformed
 
+    private void cleanForm () {
+        
+        txtDescription.setText(EMPTY_STRING_TXT_FIELD);
+        txtCustomerName.setText(EMPTY_STRING_TXT_FIELD);
+        dateChooserInitDeliveryDate.setDate(null);
+        dateChooserEndDeliveryDate.setDate(null);
+        dateChooserInitReturnDate.setDate(null);
+        dateChooserEndReturnDate.setDate(null);
+        txtFolio.setText(EMPTY_STRING_TXT_FIELD);
+        txtDescription.requestFocus();
+        
+    }
     private void btnGeneratePDFActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGeneratePDFActionPerformed
-        // TODO add your handling code here:
+        generateEventPDF();
     }//GEN-LAST:event_btnGeneratePDFActionPerformed
+
+    private void btnCleanFormActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCleanFormActionPerformed
+        cleanForm();
+    }//GEN-LAST:event_btnCleanFormActionPerformed
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

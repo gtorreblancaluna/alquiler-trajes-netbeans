@@ -14,6 +14,7 @@ public class ColumnDefinitionConstant {
     public static final String PAYMENTS_TABLE_NAME = "payments";    
     public static final String CATALOG_TYPE_EVENT_TABLE_NAME = "catalog_type_event";
     public static final String CATALOG_STATUS_EVENT_TABLE_NAME = "catalog_status_event"; 
+    public static final String GENERAL_INFO_TABLE_NAME = "general_info"; 
     public static final String ROLES_TABLE_NAME = "roles";
     public static final String USERS_ROLES_TABLE_NAME = "users_roles";
     public static final String JOIN_COLUMN_USER_ID = "user_id";

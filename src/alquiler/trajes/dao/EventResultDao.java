@@ -31,10 +31,13 @@ public class EventResultDao extends ResultDao {
                 .append("event.id,")
                 .append("event.description,")
                 .append("CONCAT(customer.name,' ',customer.last_name) AS customer,")
+                .append("CONCAT(customer.phone_number1,',',customer.phone_number2,',',customer.phone_number3) AS customer_phones,")
                 .append("event.delivery_date,")
                 .append("event.delivery_hour,")
                 .append("event.return_date,")
                 .append("event.return_hour,")
+                .append("type.name AS type_event,")
+                .append("status.name AS status_event,")
                 .append("(")
                     .append("SELECT COALESCE(SUM(p.payment),0) ")
                     .append("FROM payments p ")
@@ -51,6 +54,8 @@ public class EventResultDao extends ResultDao {
                 .append("event.created_at ")
                 .append("FROM events event ")
                 .append("INNER JOIN customers customer ON (event.customer_id = customer.id) ")
+                .append("INNER JOIN catalog_type_event type ON (type.id = event.catalog_type_event_id) ")
+                .append("INNER JOIN catalog_status_event status ON (status.id = event.catalog_status_event_id) ")
                 .append("WHERE event.enabled = 1 ");
         
         if (parameter.getEventId() != null && !parameter.getEventId().equals(0L)) {

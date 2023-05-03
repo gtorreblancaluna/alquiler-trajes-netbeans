@@ -18,7 +18,6 @@ import org.jvnet.substance.SubstanceLookAndFeel;
 public class LoginForm extends javax.swing.JFrame {
 
     private static final Logger log = Logger.getLogger(LoginForm.class.getName());
-    private MainForm mainForm;
     private final UserService userService;
     public static User userSession;
     

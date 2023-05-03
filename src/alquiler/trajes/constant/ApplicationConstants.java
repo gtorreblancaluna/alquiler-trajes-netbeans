@@ -2,6 +2,7 @@ package alquiler.trajes.constant;
 
 public interface ApplicationConstants {
     
+    public static final String EMPTY_STRING_TXT_FIELD = "";
     public static final String START_DAY_HOUR_MINUTES = " 00:01";
     public static final String END_DAY_HOUR_MINUTES = " 23:59";
     
@@ -48,6 +49,7 @@ public interface ApplicationConstants {
     public static final String MESSAGE_NUMBER_FORMAT_ERROR = "Introduce un numero valido.";
     public static final String MESSAGE_TITLE_ERROR = "Error";
     public static final String MESSAGE_TITLE_DETELE_RECORD_CONFIRM = "Confirme";
+    public static final String MESSAGE_NOT_FOUND_JASPER_FILE = "No se encuentra el Archivo jasper.";
     public static final String NO_DATA_FOUND_EXCEPTION = "No se obtuvieron registros.";
     public static final String DETELE_RECORD_CONFIRM = "¿Eliminar registro? %s";
     
@@ -59,5 +61,6 @@ public interface ApplicationConstants {
     // ****************************************************************************************
     // nombres de reportes jasper
     
-
+    public static final String PATH_NAME_EVENT_REPORT_VERTICAL_A5 = "/event_report_vertical_A5.jasper";
+    public static final String PDF_NAME_EVENT_REPORT_VERTICAL_A5 = "/event_report_vertical_A5.pdf";
 }

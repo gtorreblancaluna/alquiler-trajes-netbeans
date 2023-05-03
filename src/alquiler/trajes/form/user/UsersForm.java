@@ -1,6 +1,7 @@
 package alquiler.trajes.form.user;
 
 import alquiler.trajes.constant.ApplicationConstants;
+import static alquiler.trajes.constant.ApplicationConstants.EMPTY_STRING_TXT_FIELD;
 import alquiler.trajes.constant.RoleEnum;
 import alquiler.trajes.entity.Role;
 import alquiler.trajes.entity.User;
@@ -39,11 +40,11 @@ public class UsersForm extends javax.swing.JInternalFrame {
     }
     
     private void cleanInputs () {
-        this.txtName.setText("");
-        this.txtLastName.setText("");
-        this.txtPhoneNumber.setText("");
-        this.txtPasswd.setText("");
-        this.txtRepeatPasswd.setText("");
+        this.txtName.setText(EMPTY_STRING_TXT_FIELD);
+        this.txtLastName.setText(EMPTY_STRING_TXT_FIELD);
+        this.txtPhoneNumber.setText(EMPTY_STRING_TXT_FIELD);
+        this.txtPasswd.setText(EMPTY_STRING_TXT_FIELD);
+        this.txtRepeatPasswd.setText(EMPTY_STRING_TXT_FIELD);
     }
     
     private void initButtons () {

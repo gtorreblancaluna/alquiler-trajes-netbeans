@@ -24,15 +24,18 @@ public class TableConsultEvents extends JTable {
     @Getter
     public enum Column {
         
-        BOOLEAN(0,20,"",Boolean.class, true),
-        ID(1,20,"Folio",String.class, false),
-        DESCRIPTION(2,100,"Descripción",String.class, false),
+        BOOLEAN(0,10,"",Boolean.class, true),
+        ID(1,10,"Folio",String.class, false),
+        DESCRIPTION(2,120,"Descripción",String.class, false),
         CUSTOMER(3,60,"Cliente",String.class, false),
-        DELIVERY_DATE(4,90,"Fecha entrega",String.class, false),
-        RETURN_DATE(5,90,"Fecha devolución",String.class, false),
-        PAYMENTS(6,30,"Pagos",String.class, false),
-        SUB_TOTAL(7,30,"Subtotal",String.class, false),
-        TOTAL(8,30,"Total",String.class, false);
+        CUSTOMER_PHONES(4,60,"Telefono cliente",String.class, false),
+        DELIVERY_DATE(5,90,"Fecha entrega",String.class, false),
+        RETURN_DATE(6,90,"Fecha devolución",String.class, false),
+        TYPE_EVENT(7,30,"Tipo",String.class, false),
+        STATUS_EVENT(8,30,"Estatus",String.class, false),
+        PAYMENTS(9,20,"Abonos",String.class, false),
+        SUB_TOTAL(10,20,"Subtotal",String.class, false),
+        TOTAL(11,20,"Total",String.class, false);
         
         private final int number;
         private final int size;
@@ -106,8 +109,11 @@ public class TableConsultEvents extends JTable {
             this.getColumnModel()
                     .getColumn(column.getNumber())
                     .setPreferredWidth(column.getSize());
-        }  
+        }
         
+        this.getColumnModel().getColumn(Column.ID.getNumber()).setCellRenderer(center);
+        this.getColumnModel().getColumn(Column.TYPE_EVENT.getNumber()).setCellRenderer(center);
+        this.getColumnModel().getColumn(Column.STATUS_EVENT.getNumber()).setCellRenderer(center);
         this.getColumnModel().getColumn(Column.SUB_TOTAL.getNumber()).setCellRenderer(right);
         this.getColumnModel().getColumn(Column.PAYMENTS.getNumber()).setCellRenderer(right);
         this.getColumnModel().getColumn(Column.TOTAL.getNumber()).setCellRenderer(right);

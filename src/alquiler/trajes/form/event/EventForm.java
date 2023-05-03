@@ -4,8 +4,12 @@ import alquiler.trajes.constant.ApplicationConstants;
 import static alquiler.trajes.constant.ApplicationConstants.DATE_LARGE;
 import static alquiler.trajes.constant.ApplicationConstants.DATE_MEDIUM;
 import static alquiler.trajes.constant.ApplicationConstants.DECIMAL_FORMAT;
+import static alquiler.trajes.constant.ApplicationConstants.EMPTY_STRING_TXT_FIELD;
 import static alquiler.trajes.constant.ApplicationConstants.ENTER_KEY;
 import static alquiler.trajes.constant.ApplicationConstants.MESSAGE_TITLE_ERROR;
+import static alquiler.trajes.constant.ApplicationConstants.PATH_NAME_EVENT_REPORT_VERTICAL_A5;
+import static alquiler.trajes.constant.ApplicationConstants.PDF_NAME_EVENT_REPORT_VERTICAL_A5;
+import alquiler.trajes.constant.GeneralInfoEnum;
 import alquiler.trajes.entity.CatalogStatusEvent;
 import alquiler.trajes.entity.CatalogTypeEvent;
 import alquiler.trajes.entity.Customer;
@@ -22,10 +26,12 @@ import alquiler.trajes.service.CatalogTypeEventService;
 import alquiler.trajes.service.CustomerService;
 import alquiler.trajes.service.DetailEventService;
 import alquiler.trajes.service.EventService;
+import alquiler.trajes.service.GeneralInfoService;
 import alquiler.trajes.service.PaymentService;
 import alquiler.trajes.table.TableFormatDetail;
 import alquiler.trajes.table.TableFormatCustomers;
 import alquiler.trajes.table.TableFormatPayments;
+import alquiler.trajes.util.JasperPrintUtil;
 import alquiler.trajes.util.Utility;
 import static alquiler.trajes.util.Utility.onlyAdminUserAccess;
 import java.awt.Frame;
@@ -35,7 +41,9 @@ import java.beans.PropertyChangeEvent;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -64,6 +72,8 @@ public class EventForm extends javax.swing.JInternalFrame {
     private final CatalogStatusEventService catalogStatusEventService;
     private final EventService eventService;
     private final PaymentService paymentService;
+    private final JasperPrintUtil jasperPrintUtil;
+    private final GeneralInfoService generalInfoService;
     private final DetailEventService detailEventService;
     private List<CatalogTypeEvent> types = new ArrayList<>();
     private List<CatalogStatusEvent> status = new ArrayList<>();
@@ -82,6 +92,8 @@ public class EventForm extends javax.swing.JInternalFrame {
         this.customerService = CustomerService.getInstance();
         catalogTypeEventService = CatalogTypeEventService.getInstance();
         catalogStatusEventService = CatalogStatusEventService.getInstance();
+        generalInfoService = GeneralInfoService.getInstance();
+        jasperPrintUtil = JasperPrintUtil.getInstance();
         paymentService = PaymentService.getInstance();
         detailEventService = DetailEventService.getInstance();
         eventService = EventService.getInstance();
@@ -107,6 +119,47 @@ public class EventForm extends javax.swing.JInternalFrame {
         addMouseListenerToTableDetail();
         addMouseListenerToTablePayments();
 
+    }
+    
+    private void generateEventPDF () {
+        
+        if (this.event.getId() == null) {
+            JOptionPane.showMessageDialog(
+                   this, "Guarda el evento para generar el PDF.",
+                   ApplicationConstants.MESSAGE_MISSING_PARAMETERS,
+                   JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        try {
+            Map parameters = new HashMap<>();
+            
+            String payments = lblPayments.getText();
+            String subTotal = lblSubTotal.getText();
+            String total = decimalFormat.format(Float.parseFloat(lblSubTotal.getText())-Float.parseFloat(lblPayments.getText()));
+            
+            parameters.put("ID", event.getId().toString());
+            parameters.put("FOLIO", event.getId().toString());
+            parameters.put("USER_NAME", event.getUser().getName()+" "+event.getUser().getLastName());
+            parameters.put("CUSTOMER_NAME", event.getCustomer().getName()+" "+event.getCustomer().getLastName());
+            parameters.put("TYPE_EVENT", event.getCatalogTypeEvent().getName());
+            parameters.put("STATUS_EVENT", event.getCatalogStatusEvent().getName());
+            parameters.put("DELIVERY_DATE", fastDateFormatLarge.format(event.getDeliveryDate())+" "+event.getDeliveryHour()+" Hrs.");
+            parameters.put("RETURN_DATE", fastDateFormatLarge.format(event.getReturnDate())+" "+event.getReturnHour()+ " Hrs.");
+            parameters.put("CREATED_AT_DATE", fastDateFormatLarge.format(event.getCreatedAt()));
+            parameters.put("DESCRIPTION", event.getDescription());
+            parameters.put("PAYMENTS", payments);
+            parameters.put("SUBTOTAL", subTotal);
+            parameters.put("TOTAL", total);
+            parameters.put("COMPANY_NAME", generalInfoService.getByKey(GeneralInfoEnum.COMPANY_NAME.getKey()));
+            parameters.put("INFO_FOOTER_PDF_A5", generalInfoService.getByKey(GeneralInfoEnum.INFO_FOOTER_PDF_A5.getKey()));
+            jasperPrintUtil.showPDF(parameters, PATH_NAME_EVENT_REPORT_VERTICAL_A5, PDF_NAME_EVENT_REPORT_VERTICAL_A5);
+        } catch (BusinessException e) {
+            log.error(e);
+           JOptionPane.showMessageDialog(
+                   this, e.getMessage(),
+                   ApplicationConstants.MESSAGE_UNEXPECTED_ERROR,
+                   JOptionPane.ERROR_MESSAGE);  
+        }
     }
     
     private void getEventDateFromInputs () throws InvalidDataException{
@@ -335,6 +388,7 @@ public class EventForm extends javax.swing.JInternalFrame {
         lblInfoUser.setText("Atendió:");
         try {
             this.event = eventService.findById(this.eventId);
+            lblCustomer.setText(this.event.getCustomer().getName()+" "+this.event.getCustomer().getLastName());
             lblUser.setText(this.event.getUser().getName()+" "+this.event.getUser().getLastName());
             lblEventCreatedAt.setText("Fecha de elaboración: "+fastDateFormatLarge.format(this.event.getCreatedAt()));
             tabPaneMain.setSelectedIndex(INDEX_EVENT_PANE);
@@ -345,9 +399,13 @@ public class EventForm extends javax.swing.JInternalFrame {
             fillInputsFormFromEvent();
             cmbCatalogType.setSelectedItem(this.event.getCatalogTypeEvent());
             cmbStatus.setSelectedItem(this.event.getCatalogStatusEvent());
-            fillTablePaymentsFromEventId();
-            fillTableDetailFromEvent();
-            total();            
+            
+            new Thread(() -> {
+                fillTablePaymentsFromEventId();
+                fillTableDetailFromEvent();
+                total();
+            }).start();
+            
         } catch (BusinessException e) {
            log.error(e);
            JOptionPane.showMessageDialog(this, e.getMessage(), ApplicationConstants.MESSAGE_UNEXPECTED_ERROR, JOptionPane.ERROR_MESSAGE);
@@ -365,7 +423,7 @@ public class EventForm extends javax.swing.JInternalFrame {
             txtReturnHour.setText(this.event.getReturnHour());
         } else {
             dateChooserReturnDate.setDate(null);
-            txtReturnHour.setText("");
+            txtReturnHour.setText(EMPTY_STRING_TXT_FIELD);
         }
         this.txtAreaDescription.setText(this.event.getDescription());
         
@@ -399,7 +457,7 @@ public class EventForm extends javax.swing.JInternalFrame {
     
     private void initFormWithNewEvent () {
         lblInfoUser.setText("Atiende:");
-        lblEventCreatedAt.setText("");
+        lblEventCreatedAt.setText(EMPTY_STRING_TXT_FIELD);
         btnEdit.setVisible(false);
         event = new Event();
         tabPaneMain.setEnabledAt(INDEX_EVENT_PANE, false);
@@ -472,11 +530,11 @@ public class EventForm extends javax.swing.JInternalFrame {
     }
     
     private void cleanCustomerInputs () {
-        this.txtName.setText("");
-        this.txtLastName.setText("");
-        this.txtPhoneNumber1.setText("");
-        this.txtPhoneNumber2.setText("");
-        this.txtPhoneNumber3.setText("");
+        this.txtName.setText(EMPTY_STRING_TXT_FIELD);
+        this.txtLastName.setText(EMPTY_STRING_TXT_FIELD);
+        this.txtPhoneNumber1.setText(EMPTY_STRING_TXT_FIELD);
+        this.txtPhoneNumber2.setText(EMPTY_STRING_TXT_FIELD);
+        this.txtPhoneNumber3.setText(EMPTY_STRING_TXT_FIELD);
     }
     
     private Customer getCustomerFromInputs () {
@@ -1562,14 +1620,14 @@ public class EventForm extends javax.swing.JInternalFrame {
         
         final Date now = new Date();
         
-        lblFolio.setText("");
+        lblFolio.setText(EMPTY_STRING_TXT_FIELD);
         this.dateChooserDeliveryDate.setDate(now);
         this.dateChooserReturnDate.setDate(now);
         this.cmbCatalogType.setSelectedIndex(0);
         this.cmbStatus.setSelectedIndex(0);
-        this.txtDeliveryHour.setText("");
-        this.txtReturnHour.setText("");
-        this.txtAreaDescription.setText("");
+        this.txtDeliveryHour.setText(EMPTY_STRING_TXT_FIELD);
+        this.txtReturnHour.setText(EMPTY_STRING_TXT_FIELD);
+        this.txtAreaDescription.setText(EMPTY_STRING_TXT_FIELD);
         this.tableFormatDetail.format();
         this.tableFormatPayments.format();
         total();
@@ -1577,8 +1635,8 @@ public class EventForm extends javax.swing.JInternalFrame {
     }
     
     private void cleanInputsPaymentForm () {
-        txtPaymentImport.setText("");
-        txtPaymentsConcept.setText("");
+        txtPaymentImport.setText(EMPTY_STRING_TXT_FIELD);
+        txtPaymentsConcept.setText(EMPTY_STRING_TXT_FIELD);
         txtPaymentImport.requestFocus();
     }
     
@@ -1631,7 +1689,7 @@ public class EventForm extends javax.swing.JInternalFrame {
     }//GEN-LAST:event_btnPaymentsDeleteActionPerformed
 
     private void btnGeneratePDFActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGeneratePDFActionPerformed
-        // TODO add your handling code here:
+        generateEventPDF();
     }//GEN-LAST:event_btnGeneratePDFActionPerformed
 
     private void txtPaymentImportKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtPaymentImportKeyPressed

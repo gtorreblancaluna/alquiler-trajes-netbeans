@@ -1,6 +1,7 @@
 package alquiler.trajes.form.customer;
 
 import alquiler.trajes.constant.ApplicationConstants;
+import static alquiler.trajes.constant.ApplicationConstants.EMPTY_STRING_TXT_FIELD;
 import alquiler.trajes.entity.Customer;
 import alquiler.trajes.exceptions.BusinessException;
 import alquiler.trajes.exceptions.NoDataFoundException;
@@ -33,12 +34,12 @@ public class CustomersForm extends javax.swing.JInternalFrame {
     }
     
     private void cleanInputs () {
-        this.txtName.setText("");
-        this.txtLastName.setText("");
-        this.txtPhoneNumber1.setText("");
-        this.txtEmail.setText("");
-        this.txtPhoneNumber2.setText("");
-        this.txtPhoneNumber3.setText("");
+        this.txtName.setText(EMPTY_STRING_TXT_FIELD);
+        this.txtLastName.setText(EMPTY_STRING_TXT_FIELD);
+        this.txtPhoneNumber1.setText(EMPTY_STRING_TXT_FIELD);
+        this.txtEmail.setText(EMPTY_STRING_TXT_FIELD);
+        this.txtPhoneNumber2.setText(EMPTY_STRING_TXT_FIELD);
+        this.txtPhoneNumber3.setText(EMPTY_STRING_TXT_FIELD);
     }
     
     private void initButtons () {

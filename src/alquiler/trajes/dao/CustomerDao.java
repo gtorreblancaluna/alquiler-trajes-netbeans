@@ -20,7 +20,6 @@ public class CustomerDao implements Dao<Customer> {
     private static final CustomerDao SINGLE_INSTANCE = null;
         
     public static CustomerDao getInstance(){
-        
         if (SINGLE_INSTANCE == null) {
             return new CustomerDao();
         }
