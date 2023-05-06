@@ -19,7 +19,7 @@ import net.sf.jasperreports.engine.JasperReport;
 import net.sf.jasperreports.engine.util.JRLoader;
 import org.apache.log4j.Logger;
 
-public class JasperPrintUtil {
+public final class JasperPrintUtil {
     
     private JasperPrintUtil(){
         prop = PropertiesService.getInstance();
@@ -31,12 +31,12 @@ public class JasperPrintUtil {
     }
     
     private static final Logger log = Logger.getLogger(JasperPrintUtil.class.getName());
-    private static final JasperPrintUtil SINGLE_INSTANCE = null;
+    private static JasperPrintUtil SINGLE_INSTANCE;
         
-    public static JasperPrintUtil getInstance() {
+    public static synchronized JasperPrintUtil getInstance() {
         
         if (SINGLE_INSTANCE == null) {
-            return new JasperPrintUtil();
+            SINGLE_INSTANCE = new JasperPrintUtil();
         }
         return SINGLE_INSTANCE;
     }
@@ -49,6 +49,7 @@ public class JasperPrintUtil {
         getConnection();
         try {
             String pathLocation = Utility.getPathLocation();
+            parameters.put("URL_SUB_REPORT_CONSULTA", pathLocation+"/");
             parameters.put("URL_IMAGEN",pathLocation+ApplicationConstants.LOGO_EMPRESA );
             JasperPrint jasperPrint;
             String locationFile = pathLocation+pathJasperReport;

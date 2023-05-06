@@ -9,7 +9,7 @@ import java.util.Optional;
 import javax.persistence.NoResultException;
 import org.apache.log4j.Logger;
 
-public class GeneralInfoService {
+public final class GeneralInfoService {
     
     private GeneralInfoService(){}
     
@@ -17,15 +17,15 @@ public class GeneralInfoService {
                 
     private GeneralInfoDao generalInfoDao = GeneralInfoDao.getInstance();
             
-    private static final GeneralInfoService SINGLE_INSTANCE = null;
+    private static GeneralInfoService SINGLE_INSTANCE;
         
-    public static GeneralInfoService getInstance(){
+    public static synchronized GeneralInfoService getInstance() {
         
         if (SINGLE_INSTANCE == null) {
-            return new GeneralInfoService();
+            SINGLE_INSTANCE = new GeneralInfoService();
         }
         return SINGLE_INSTANCE;
-    }    
+    }   
     
     
     public String getByKey (final String key)throws BusinessException {

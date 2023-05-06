@@ -2,6 +2,8 @@ package alquiler.trajes.constant;
 
 public interface ApplicationConstants {
     
+    public static final String DESCRIPTION_FORMAT_24_HRS = " Hrs.";
+    
     public static final String EMPTY_STRING_TXT_FIELD = "";
     public static final String START_DAY_HOUR_MINUTES = " 00:01";
     public static final String END_DAY_HOUR_MINUTES = " 23:59";
@@ -63,4 +65,7 @@ public interface ApplicationConstants {
     
     public static final String PATH_NAME_EVENT_REPORT_VERTICAL_A5 = "/event_report_vertical_A5.jasper";
     public static final String PDF_NAME_EVENT_REPORT_VERTICAL_A5 = "/event_report_vertical_A5.pdf";
+    
+    public static final String PATH_NAME_DETAIL_REPORT_A4_HORIZONTAL = "/detail_report_A4_horizontal.jasper";
+    public static final String PDF_NAME_DETAIL_REPORT_A4_HORIZONTAL = "/detail_report_A4_horizontal.pdf";
 }

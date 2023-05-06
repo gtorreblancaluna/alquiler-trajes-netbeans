@@ -2,8 +2,10 @@ package alquiler.trajes.util;
 
 import alquiler.trajes.constant.ApplicationConstants;
 import static alquiler.trajes.constant.ApplicationConstants.MESSAGE_TITLE_DETELE_RECORD_CONFIRM;
+import static alquiler.trajes.constant.ApplicationConstants.SELECT_A_ROW_NECCESSARY;
 import alquiler.trajes.constant.RoleEnum;
 import alquiler.trajes.entity.Role;
+import alquiler.trajes.exceptions.BusinessException;
 import alquiler.trajes.exceptions.UnAuthorizedException;
 import alquiler.trajes.form.login.LoginForm;
 import java.io.File;
@@ -19,14 +21,97 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.table.DefaultTableModel;
 
 
 
 public abstract class Utility {
     private static final int POSITION_HOUR = 0;
     private static final int POSITION_MINUTE = 1;
+    private static final String ZERO_ID_FOR_NEW_ELEMENT = "0";
     
-    public static List<String> getColumnsIdByBooleanSelected (JTable table, int columnNumberBoolean, int columnNumberId) {
+    public static void cloneRowsCheckedTable (JTable table,
+                int columnNumberBoolean, int columnIdNumber) throws BusinessException{
+        
+        DefaultTableModel temp = (DefaultTableModel) table.getModel();
+        int cloned=0;
+        int rowCount = table.getRowCount();
+        int columns = table.getColumnCount();
+        for (int i = 0; i < rowCount; i++) {
+             if (Boolean.parseBoolean(table.getValueAt(i, columnNumberBoolean).toString())) {
+                 cloned++;
+                 Object row[] = new Object[columns];
+                 for (int j = 0; j < columns; j++) {
+                     if (j == columnIdNumber) {
+                         row[j] = ZERO_ID_FOR_NEW_ELEMENT;
+                     } else if (j == columnNumberBoolean){
+                         row[j] = Boolean.FALSE;
+                     } else {
+                         row[j] = table.getValueAt(i, j);
+                     }  
+                 }
+                 temp.addRow(row);
+             }
+        }
+        if (cloned <= 0) {
+           throw new BusinessException(SELECT_A_ROW_NECCESSARY);
+        }        
+    }
+    
+    public static void removeRowsCheckedTable (JTable table,
+                int columnNumberBoolean) throws BusinessException{
+        
+        DefaultTableModel temp = (DefaultTableModel) table.getModel();
+        int removed=0;
+        int rowCount = table.getRowCount();
+        for (int i = rowCount - 1; i >= 0; i--) {
+             if (Boolean.parseBoolean(table.getValueAt(i, columnNumberBoolean).toString())) {
+                 temp.removeRow(i);
+                 removed++;
+             }
+        }
+        if (removed <= 0) {
+           throw new BusinessException(SELECT_A_ROW_NECCESSARY);
+        }
+    }
+    
+    public static String getEventIdFromTableOnlyOneRowSelected (
+                JTable table, 
+                int columnNumberBoolean, 
+                int columnNumberId) throws BusinessException{
+        
+        List<String> ids = 
+                Utility.getColumnsIdByBooleanSelected(
+                        table, 
+                        columnNumberBoolean, 
+                        columnNumberId
+                );
+        
+        if (ids.isEmpty() || (!ids.isEmpty() && ids.size() > 1)) {
+            throw new BusinessException(SELECT_A_ROW_NECCESSARY);
+        }
+        
+        return ids.get(0);
+    }
+    
+    public static List<String> getIdsByColumnChecked (
+            JTable table,
+            int columnNumberBoolean,
+            int columnNumberId ) {
+        
+        List<String> ids = 
+                getColumnsIdByBooleanSelected(
+                        table, 
+                        columnNumberBoolean, 
+                        columnNumberId
+                );        
+        return ids;
+    }
+    
+    public static List<String> getColumnsIdByBooleanSelected (
+            JTable table, 
+            int columnNumberBoolean, 
+            int columnNumberId) {
         List<String> columnsSelected = new ArrayList<>();
 
          for (int i = 0; i < table.getRowCount(); i++) {

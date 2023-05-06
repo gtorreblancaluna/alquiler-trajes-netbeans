@@ -12,16 +12,17 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityTransaction;
 import javax.persistence.NoResultException;
 
-public class CustomerDao implements Dao<Customer> {
+public final class CustomerDao implements Dao<Customer> {
 
     static EntityManager em = PersistenceManager.getInstance().createEntityManager();
     
     private CustomerDao () {}
-    private static final CustomerDao SINGLE_INSTANCE = null;
+    private static CustomerDao SINGLE_INSTANCE;
         
-    public static CustomerDao getInstance(){
+   public static synchronized CustomerDao getInstance() {
+        
         if (SINGLE_INSTANCE == null) {
-            return new CustomerDao();
+            SINGLE_INSTANCE = new CustomerDao();
         }
         return SINGLE_INSTANCE;
     }

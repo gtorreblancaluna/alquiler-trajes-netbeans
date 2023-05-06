@@ -12,7 +12,7 @@ import java.util.Optional;
 import javax.persistence.NoResultException;
 import org.apache.log4j.Logger;
 
-public class PaymentService {
+public final class PaymentService {
     
     private PaymentService(){}
     
@@ -20,15 +20,15 @@ public class PaymentService {
                 
     private PaymentDao paymentDao = PaymentDao.getInstance();
             
-    private static final PaymentService SINGLE_INSTANCE = null;
+    private static PaymentService SINGLE_INSTANCE;
         
-    public static PaymentService getInstance(){
+    public static synchronized PaymentService getInstance() {
         
         if (SINGLE_INSTANCE == null) {
-            return new PaymentService();
+            SINGLE_INSTANCE = new PaymentService();
         }
         return SINGLE_INSTANCE;
-    }   
+    }
     
     public void save (Payment payment) throws BusinessException {
         
@@ -70,8 +70,19 @@ public class PaymentService {
 
     }
     
-    public List<Payment> getAll (Long eventId) throws BusinessException {
+    public List<Payment> getAll (final Long eventId) throws BusinessException {
         return paymentDao.getAll(eventId);
+    }
+    
+    public Float getPaymentsByEvent (final Long eventId) throws BusinessException {
+        List<Payment> payments = getAll(eventId);
+        Float sumPayment = 0F;
+        for (Payment payment : payments) {
+            if (payment.getPayment() != null) {
+                sumPayment += payment.getPayment();
+            }
+        }
+        return sumPayment;
     }
     
 }

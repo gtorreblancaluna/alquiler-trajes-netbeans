@@ -14,7 +14,7 @@ import java.util.Optional;
 import javax.persistence.NoResultException;
 import org.apache.log4j.Logger;
 
-public class EventService {
+public final class EventService {
     
     private EventService(){}
     
@@ -24,15 +24,15 @@ public class EventService {
     private final DetailEventService detailEventService = DetailEventService.getInstance();
     private final PaymentService paymentService = PaymentService.getInstance();
             
-    private static final EventService SINGLE_INSTANCE = null;
+    private static EventService SINGLE_INSTANCE;
         
-    public static EventService getInstance(){
+    public static synchronized EventService getInstance() {
         
         if (SINGLE_INSTANCE == null) {
-            return new EventService();
+            SINGLE_INSTANCE = new EventService();
         }
         return SINGLE_INSTANCE;
-    }   
+    }  
     
     public void save (Event event,
             List<DetailEvent> detailEvent,

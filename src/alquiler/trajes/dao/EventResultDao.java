@@ -9,17 +9,17 @@ import javax.persistence.EntityManager;
 import javax.persistence.Query;
 
 
-public class EventResultDao extends ResultDao {
+public final class EventResultDao extends ResultDao {
     
     static EntityManager em = PersistenceManager.getInstance().createEntityManager();
     
     private EventResultDao () {}
-    private static final EventResultDao SINGLE_INSTANCE = null;
+    private static EventResultDao SINGLE_INSTANCE;
         
-        public static EventResultDao getInstance(){
+   public static synchronized EventResultDao getInstance() {
         
         if (SINGLE_INSTANCE == null) {
-            return new EventResultDao();
+            SINGLE_INSTANCE = new EventResultDao();
         }
         return SINGLE_INSTANCE;
     }

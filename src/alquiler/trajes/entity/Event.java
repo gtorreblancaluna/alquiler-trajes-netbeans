@@ -44,16 +44,16 @@ public class Event {
     @JoinColumn(name="customer_id", nullable=false)
     private Customer customer;
     
-    @Column(name="delivery_date",nullable = false, updatable = false)
+    @Column(name="delivery_date",nullable = false)
     private Date deliveryDate;
     
-    @Column(name="delivery_hour",nullable = false, updatable = false)
+    @Column(name="delivery_hour",nullable = false)
     private String deliveryHour;
     
-    @Column(name="return_date",updatable = false)
+    @Column(name="return_date")
     private Date returnDate;
     
-    @Column(name="return_hour",updatable = false)
+    @Column(name="return_hour")
     private String returnHour;
 
     @Column(nullable = false, length = 755)

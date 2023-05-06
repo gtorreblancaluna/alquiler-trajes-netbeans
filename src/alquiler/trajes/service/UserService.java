@@ -19,7 +19,7 @@ import javax.persistence.NoResultException;
 import org.apache.log4j.Logger;
 
 
-public class UserService {
+public final class UserService {
     
     private UserService(){}
     
@@ -27,12 +27,12 @@ public class UserService {
                 
     private UserDao userDao = UserDao.getInstance();
             
-    private static final UserService SINGLE_INSTANCE = null;
+    private static UserService SINGLE_INSTANCE;
         
-    public static UserService getInstance(){
+    public static synchronized UserService getInstance() {
         
         if (SINGLE_INSTANCE == null) {
-            return new UserService();
+            SINGLE_INSTANCE = new UserService();
         }
         return SINGLE_INSTANCE;
     }
@@ -47,7 +47,7 @@ public class UserService {
         if (user.getName().isEmpty()) {
             errors.add("Nombre es requerido.");
         }
-        if (user.getLastName().isBlank()) {
+        if (user.getLastName().isEmpty()) {
             errors.add("Apellidos es requerido.");
         }
         if (!user.getName().isEmpty() && user.getName().length() > 100) {

@@ -12,19 +12,19 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityTransaction;
 import javax.persistence.NoResultException;
 
-public class PaymentDao implements Dao<Payment> {
+public final class PaymentDao implements Dao<Payment> {
 
     static EntityManager em = PersistenceManager.getInstance().createEntityManager();
     
     private PaymentDao () {
         
     }
-    private static final PaymentDao SINGLE_INSTANCE = null;
+    private static PaymentDao SINGLE_INSTANCE;
         
-    public static PaymentDao getInstance(){
+   public static synchronized PaymentDao getInstance() {
         
         if (SINGLE_INSTANCE == null) {
-            return new PaymentDao();
+            SINGLE_INSTANCE = new PaymentDao();
         }
         return SINGLE_INSTANCE;
     }

@@ -12,17 +12,17 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityTransaction;
 import javax.persistence.NoResultException;
 
-public class GeneralInfoDao implements Dao<GeneralInfo> {
+public final class GeneralInfoDao implements Dao<GeneralInfo> {
 
     static EntityManager em = PersistenceManager.getInstance().createEntityManager();
     
     private GeneralInfoDao () {}
-    private static final GeneralInfoDao SINGLE_INSTANCE = null;
+    private static GeneralInfoDao SINGLE_INSTANCE;
         
-    public static GeneralInfoDao getInstance(){
+   public static synchronized GeneralInfoDao getInstance() {
         
         if (SINGLE_INSTANCE == null) {
-            return new GeneralInfoDao();
+            SINGLE_INSTANCE = new GeneralInfoDao();
         }
         return SINGLE_INSTANCE;
     }

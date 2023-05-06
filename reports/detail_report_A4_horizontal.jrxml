@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="detail_report_A4_horizontal" pageWidth="842" pageHeight="595" orientation="Landscape" columnWidth="802" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="c2275f82-2841-44c4-8a26-854d427dc62d">
+	<property name="ireport.zoom" value="1.9487171000000019"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="TITLE" class="java.lang.String"/>
+	<parameter name="IDS" class="java.lang.String"/>
+	<parameter name="URL_SUB_REPORT_CONSULTA" class="java.lang.String"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["C:\\Users\\107209781\\Developer\\alquiler-trajes\\alquiler-trajes\\reports\\"]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[SELECT
+            event.id AS event_id,
+            event.id AS folio,
+            CONCAT(customer.name," ",customer.last_name) AS customer,
+			event.delivery_date,
+			event.delivery_hour,
+            event.description,
+            status.name AS status_name,
+            type.name AS type_name
+        FROM
+            events event
+            INNER JOIN customers customer ON customer.id = event.customer_id
+            INNER JOIN catalog_type_event type ON type.id = event.catalog_type_event_id
+            INNER JOIN catalog_status_event status ON status.id = catalog_status_event_id
+        WHERE
+            event.id IN ($P!{IDS})
+            ORDER BY event.delivery_date]]>
+	</queryString>
+	<field name="folio" class="java.lang.String"/>
+	<field name="customer" class="java.lang.String"/>
+	<field name="delivery_date" class="java.lang.String"/>
+	<field name="delivery_hour" class="java.lang.String"/>
+	<field name="status_name" class="java.lang.String"/>
+	<field name="type_name" class="java.lang.String"/>
+	<field name="event_id" class="java.lang.String"/>
+	<field name="description" class="java.lang.String"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="21" splitType="Stretch">
+			<textField>
+				<reportElement x="0" y="0" width="802" height="21" uuid="44d2ec9e-34e9-4269-ad83-2bd65cd8bc7e"/>
+				<textFieldExpression><![CDATA[$P{TITLE}]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<detail>
+		<band height="25" splitType="Stretch">
+			<textField>
+				<reportElement x="0" y="0" width="17" height="12" uuid="e257dcf4-a19b-4705-ae94-5c022c4a29b9"/>
+				<textElement>
+					<font size="9" isUnderline="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{folio}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="17" y="0" width="185" height="12" uuid="d7b7b569-7b9c-4ca4-968b-0b419f790510"/>
+				<textElement>
+					<font size="9" isUnderline="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{customer}]]></textFieldExpression>
+			</textField>
+			<textField pattern="EEEEE dd MMMMM yyyy">
+				<reportElement x="202" y="0" width="196" height="12" uuid="926cd383-ef5a-4d3c-a553-23c3a6ff5d66"/>
+				<textElement>
+					<font size="9" isUnderline="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new SimpleDateFormat("EEEEE' 'dd' de 'MMMMM' de 'yyyy").format(new SimpleDateFormat("yyyy-MM-dd").parse($F{delivery_date}))]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="398" y="0" width="39" height="12" uuid="f4c661bf-7f79-4dd2-9a0e-e242117abbec"/>
+				<textElement>
+					<font size="9" isUnderline="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{delivery_hour}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="437" y="0" width="256" height="12" uuid="4e7c7d5e-a88e-4215-b2d5-4af7783e1ca4"/>
+				<textElement>
+					<font size="9" isUnderline="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{description}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="693" y="0" width="62" height="12" uuid="8a929e24-2c66-47fd-8ad3-02f3fc78c73c"/>
+				<textElement>
+					<font size="9" isUnderline="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{type_name}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="755" y="0" width="47" height="12" uuid="99fb8f8b-67d9-4f1f-9cb7-475748a6ef1b"/>
+				<textElement>
+					<font size="9" isUnderline="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{status_name}]]></textFieldExpression>
+			</textField>
+			<subreport>
+				<reportElement x="0" y="12" width="802" height="13" uuid="f34a58ef-5eb8-4dec-8138-d0630df02a9e"/>
+				<subreportParameter name="ID">
+					<subreportParameterExpression><![CDATA[$F{event_id}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{URL_SUB_REPORT_CONSULTA} + "sub_report_detail_report_A4_horizontal.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="12" splitType="Stretch">
+			<textField>
+				<reportElement x="656" y="0" width="80" height="11" uuid="1ddf3fda-bc68-4196-b762-35d83b2469f9"/>
+				<textElement textAlignment="Right">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Página "+$V{PAGE_NUMBER}+" de"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Report">
+				<reportElement x="736" y="0" width="62" height="11" uuid="6e775ed0-0fbc-4055-bc44-320e2ae27ee0"/>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+			<textField pattern="EEEEE dd MMMMM yyyy">
+				<reportElement x="0" y="0" width="369" height="11" uuid="e416c900-d15f-4039-8f1d-f0155af93f02"/>
+				<textElement>
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Impresión: "+new java.util.Date()]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="sub_report_detail_report_A4_horizontal" pageWidth="842" pageHeight="595" orientation="Landscape" columnWidth="842" leftMargin="0" rightMargin="0" topMargin="2" bottomMargin="2" uuid="5db1660a-23b1-461b-b330-c8337f293a0c">
+	<property name="ireport.zoom" value="4.594972986357247"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="ID" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[SELECT
+            d.name_of_aggregate,
+            d.items,
+            d.adjustments,
+            d.unit_price,
+            d.advance_payment
+            FROM detail_event d
+            WHERE d.event_id = $P{ID};]]>
+	</queryString>
+	<field name="name_of_aggregate" class="java.lang.String"/>
+	<field name="items" class="java.lang.String"/>
+	<field name="adjustments" class="java.lang.String"/>
+	<columnHeader>
+		<band height="12">
+			<staticText>
+				<reportElement x="0" y="0" width="100" height="12" uuid="50632c43-5da1-420b-bdb9-f0c0975a6d2a"/>
+				<textElement>
+					<font size="9"/>
+				</textElement>
+				<text><![CDATA[Nombre]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="100" y="0" width="365" height="12" uuid="9b0ec7e8-a124-487b-88a2-7156ae2f8581"/>
+				<textElement>
+					<font size="9"/>
+				</textElement>
+				<text><![CDATA[Descripción]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="465" y="0" width="362" height="12" uuid="fbac652e-bbc6-4849-bcd3-1e03b8a52db0"/>
+				<textElement>
+					<font size="9"/>
+				</textElement>
+				<text><![CDATA[Ajustes]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="17" splitType="Stretch">
+			<rectangle>
+				<reportElement mode="Opaque" x="0" y="0" width="827" height="14" forecolor="#FFFFFF" backcolor="#EEEEEE" uuid="69019f0a-7dc3-473e-a575-744e2d9c91d5">
+					<printWhenExpression><![CDATA[$V{REPORT_COUNT}%2==0]]></printWhenExpression>
+				</reportElement>
+			</rectangle>
+			<textField>
+				<reportElement x="0" y="0" width="100" height="14" forecolor="#666666" uuid="b5c17f6c-159f-4940-801a-20aaff13cb61"/>
+				<textElement>
+					<font size="9" isItalic="true" isUnderline="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{name_of_aggregate}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="100" y="0" width="365" height="14" forecolor="#666666" uuid="8fd04fcf-a393-4e62-aba2-dc3ac8257e76"/>
+				<textElement>
+					<font size="9" isItalic="true" isUnderline="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{items}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="465" y="0" width="362" height="14" forecolor="#666666" uuid="eb466065-3e17-4d74-8f90-6b1b4c236e52"/>
+				<textElement>
+					<font size="9" isItalic="true" isUnderline="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{adjustments}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

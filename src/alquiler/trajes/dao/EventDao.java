@@ -13,19 +13,19 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityTransaction;
 import javax.persistence.NoResultException;
 
-public class EventDao implements Dao<Event> {
+public final class EventDao implements Dao<Event> {
 
     static EntityManager em = PersistenceManager.getInstance().createEntityManager();
     
     private EventDao () {
         
     }
-    private static final EventDao SINGLE_INSTANCE = null;
+    private static EventDao SINGLE_INSTANCE;
         
-    public static EventDao getInstance(){
+   public static synchronized EventDao getInstance() {
         
         if (SINGLE_INSTANCE == null) {
-            return new EventDao();
+            SINGLE_INSTANCE = new EventDao();
         }
         return SINGLE_INSTANCE;
     }

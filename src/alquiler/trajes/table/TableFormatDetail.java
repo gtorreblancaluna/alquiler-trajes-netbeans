@@ -8,6 +8,7 @@ import javax.swing.JTable;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 import lombok.Getter;
@@ -23,13 +24,14 @@ public class TableFormatDetail extends JTable {
     @Getter
     public enum Column {
         
-        ID(0,20,"id",String.class, false),
-        NAME(1,80,"Nombre",String.class, false),
-        ITEMS(2,80,"Conceptos",String.class, false),
-        ADJUTS(3,40,"Ajustes",String.class, false),
-        IMPORT(4,40,"Importe",String.class, false),
-        PAYMENT(5,40,"Anticipo",String.class, false),
-        TOTAL(6,40,"Total",String.class, false);
+        BOOLEAN(0,10,"",Boolean.class, true),
+        ID(1,20,"id",String.class, false),
+        NAME(2,80,"Nombre",String.class, false),
+        ITEMS(3,80,"Conceptos",String.class, false),
+        ADJUTS(4,40,"Ajustes",String.class, false),
+        IMPORT(5,40,"Importe",String.class, false),
+        PAYMENT(6,40,"Anticipo",String.class, false),
+        TOTAL(7,40,"Total",String.class, false);
         
         private final int number;
         private final int size;
@@ -112,6 +114,11 @@ public class TableFormatDetail extends JTable {
         this.getColumnModel().getColumn(Column.IMPORT.getNumber()).setCellRenderer(right);
         this.getColumnModel().getColumn(Column.PAYMENT.getNumber()).setCellRenderer(right);
         this.getColumnModel().getColumn(Column.TOTAL.getNumber()).setCellRenderer(right);
+        
+        // adding checkbox in header table
+        TableColumn tc = this.getColumnModel().getColumn(Column.BOOLEAN.getNumber());
+        tc.setCellEditor(this.getDefaultEditor(Boolean.class)); 
+        tc.setHeaderRenderer(new CheckBoxHeader(new ItemListenerHeaderCheckbox(Column.BOOLEAN.getNumber(),this)));
         
         try {
             DefaultTableModel temp = (DefaultTableModel) this.getModel();

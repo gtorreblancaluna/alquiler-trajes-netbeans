@@ -12,17 +12,17 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityTransaction;
 import javax.persistence.NoResultException;
 
-public class CatalogStatusEventDao implements Dao<CatalogStatusEvent> {
+public final class CatalogStatusEventDao implements Dao<CatalogStatusEvent> {
 
     static EntityManager em = PersistenceManager.getInstance().createEntityManager();
     
     private CatalogStatusEventDao () {}
-    private static final CatalogStatusEventDao SINGLE_INSTANCE = null;
+    private static CatalogStatusEventDao SINGLE_INSTANCE;
         
-    public static CatalogStatusEventDao getInstance(){
+   public static synchronized CatalogStatusEventDao getInstance() {
         
         if (SINGLE_INSTANCE == null) {
-            return new CatalogStatusEventDao();
+            SINGLE_INSTANCE = new CatalogStatusEventDao();
         }
         return SINGLE_INSTANCE;
     }

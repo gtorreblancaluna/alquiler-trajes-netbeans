@@ -4,6 +4,7 @@ import alquiler.trajes.constant.ApplicationConstants;
 import static alquiler.trajes.constant.ApplicationConstants.DATE_LARGE;
 import static alquiler.trajes.constant.ApplicationConstants.DATE_MEDIUM;
 import static alquiler.trajes.constant.ApplicationConstants.DECIMAL_FORMAT;
+import static alquiler.trajes.constant.ApplicationConstants.DESCRIPTION_FORMAT_24_HRS;
 import static alquiler.trajes.constant.ApplicationConstants.EMPTY_STRING_TXT_FIELD;
 import static alquiler.trajes.constant.ApplicationConstants.ENTER_KEY;
 import static alquiler.trajes.constant.ApplicationConstants.MESSAGE_TITLE_ERROR;
@@ -133,9 +134,22 @@ public class EventForm extends javax.swing.JInternalFrame {
         try {
             Map parameters = new HashMap<>();
             
-            String payments = lblPayments.getText();
-            String subTotal = lblSubTotal.getText();
-            String total = decimalFormat.format(Float.parseFloat(lblSubTotal.getText())-Float.parseFloat(lblPayments.getText()));
+            float sumPayment = 0f;
+            float sumDetail = 0f;
+            
+            for (DetailEvent det : this.detailEvent) {
+                if (det.getUnitPrice() != null){
+                    sumDetail += det.getUnitPrice();
+                }
+            }
+            
+            for (Payment payment : this.paymentsEvent) {
+                if (payment.getPayment() != null) {
+                    sumPayment += payment.getPayment();
+                }
+            }
+            
+            String total = decimalFormat.format(sumDetail-sumPayment);
             
             parameters.put("ID", event.getId().toString());
             parameters.put("FOLIO", event.getId().toString());
@@ -143,12 +157,12 @@ public class EventForm extends javax.swing.JInternalFrame {
             parameters.put("CUSTOMER_NAME", event.getCustomer().getName()+" "+event.getCustomer().getLastName());
             parameters.put("TYPE_EVENT", event.getCatalogTypeEvent().getName());
             parameters.put("STATUS_EVENT", event.getCatalogStatusEvent().getName());
-            parameters.put("DELIVERY_DATE", fastDateFormatLarge.format(event.getDeliveryDate())+" "+event.getDeliveryHour()+" Hrs.");
-            parameters.put("RETURN_DATE", fastDateFormatLarge.format(event.getReturnDate())+" "+event.getReturnHour()+ " Hrs.");
+            parameters.put("DELIVERY_DATE", fastDateFormatLarge.format(event.getDeliveryDate())+" "+event.getDeliveryHour()+DESCRIPTION_FORMAT_24_HRS);
+            parameters.put("RETURN_DATE", fastDateFormatLarge.format(event.getReturnDate())+" "+event.getReturnHour()+DESCRIPTION_FORMAT_24_HRS);
             parameters.put("CREATED_AT_DATE", fastDateFormatLarge.format(event.getCreatedAt()));
             parameters.put("DESCRIPTION", event.getDescription());
-            parameters.put("PAYMENTS", payments);
-            parameters.put("SUBTOTAL", subTotal);
+            parameters.put("PAYMENTS", decimalFormat.format(sumPayment));
+            parameters.put("SUBTOTAL", decimalFormat.format(sumDetail));
             parameters.put("TOTAL", total);
             parameters.put("COMPANY_NAME", generalInfoService.getByKey(GeneralInfoEnum.COMPANY_NAME.getKey()));
             parameters.put("INFO_FOOTER_PDF_A5", generalInfoService.getByKey(GeneralInfoEnum.INFO_FOOTER_PDF_A5.getKey()));
@@ -662,6 +676,7 @@ public class EventForm extends javax.swing.JInternalFrame {
         btnAgregadosEdit = new javax.swing.JButton();
         btnAgregadosAdd = new javax.swing.JButton();
         btnAgregadosDelete = new javax.swing.JButton();
+        btnCopyDetailRow = new javax.swing.JButton();
         panelInnerPayments = new javax.swing.JPanel();
         jPanel7 = new javax.swing.JPanel();
         btnPaymentsEdit = new javax.swing.JButton();
@@ -938,7 +953,7 @@ public class EventForm extends javax.swing.JInternalFrame {
         panelInnerTableAgregados.setLayout(panelInnerTableAgregadosLayout);
         panelInnerTableAgregadosLayout.setHorizontalGroup(
             panelInnerTableAgregadosLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 924, Short.MAX_VALUE)
+            .addGap(0, 922, Short.MAX_VALUE)
         );
         panelInnerTableAgregadosLayout.setVerticalGroup(
             panelInnerTableAgregadosLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -972,16 +987,31 @@ public class EventForm extends javax.swing.JInternalFrame {
             }
         });
 
+        btnCopyDetailRow.setIcon(new javax.swing.ImageIcon(getClass().getResource("/alquiler/trajes/img/img32/copiar-32.png"))); // NOI18N
+        btnCopyDetailRow.setToolTipText("Clonar filas seleccionadas");
+        btnCopyDetailRow.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnCopyDetailRow.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnCopyDetailRowActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
         jPanel6.setLayout(jPanel6Layout);
         jPanel6Layout.setHorizontalGroup(
             jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel6Layout.createSequentialGroup()
                 .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(btnAgregadosAdd, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnAgregadosEdit, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnAgregadosDelete, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(jPanel6Layout.createSequentialGroup()
+                        .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(btnAgregadosAdd, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(btnAgregadosEdit, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(btnAgregadosDelete, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(0, 2, Short.MAX_VALUE))
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel6Layout.createSequentialGroup()
+                        .addGap(0, 0, Short.MAX_VALUE)
+                        .addComponent(btnCopyDetailRow, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap())
         );
         jPanel6Layout.setVerticalGroup(
             jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -992,7 +1022,9 @@ public class EventForm extends javax.swing.JInternalFrame {
                 .addComponent(btnAgregadosEdit)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(btnAgregadosDelete)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(btnCopyDetailRow)
+                .addContainerGap(74, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout panelInnerAddsLayout = new javax.swing.GroupLayout(panelInnerAdds);
@@ -1368,7 +1400,7 @@ public class EventForm extends javax.swing.JInternalFrame {
                     .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jTabbedPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 324, Short.MAX_VALUE)
+                .addComponent(jTabbedPane1)
                 .addContainerGap())
         );
 
@@ -1487,6 +1519,7 @@ public class EventForm extends javax.swing.JInternalFrame {
             DefaultTableModel temp = (DefaultTableModel) tableFormatDetail.getModel();
             
             Object row[] = {
+                false,
                 detail.getId() != null ? detail.getId() : "0",
                 detail.getNameOfAggregate(),
                 detail.getItems(),
@@ -1640,14 +1673,17 @@ public class EventForm extends javax.swing.JInternalFrame {
         txtPaymentImport.requestFocus();
     }
     
+
+    
     private void btnAgregadosDeleteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAgregadosDeleteActionPerformed
-        if (this.tableFormatDetail.getSelectedRow() == - 1) {
+        try {
+            Utility.removeRowsCheckedTable(tableFormatDetail,
+                    TableFormatDetail.Column.BOOLEAN.getNumber());
+            total();
+        } catch (BusinessException e) {
             JOptionPane.showMessageDialog(this, 
-                    ApplicationConstants.SELECT_A_ROW_NECCESSARY, MESSAGE_TITLE_ERROR, JOptionPane.WARNING_MESSAGE);
-            return;
+                    e.getMessage(), MESSAGE_TITLE_ERROR, JOptionPane.WARNING_MESSAGE);
         }
-        ((DefaultTableModel)tableFormatDetail.getModel()).removeRow(this.tableFormatDetail.getSelectedRow());
-        total();
     }//GEN-LAST:event_btnAgregadosDeleteActionPerformed
 
     private void btnPaymentsDeleteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPaymentsDeleteActionPerformed
@@ -1724,11 +1760,22 @@ public class EventForm extends javax.swing.JInternalFrame {
         newEventForm();
     }//GEN-LAST:event_btnEventAddActionPerformed
 
+    private void btnCopyDetailRowActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCopyDetailRowActionPerformed
+        try {
+            Utility.cloneRowsCheckedTable(tableFormatDetail, TableFormatDetail.Column.BOOLEAN.getNumber(),
+                    TableFormatDetail.Column.ID.getNumber());
+        } catch (BusinessException e) {
+            JOptionPane.showMessageDialog(this, 
+                    e.getMessage(), MESSAGE_TITLE_ERROR, JOptionPane.WARNING_MESSAGE);
+        }
+    }//GEN-LAST:event_btnCopyDetailRowActionPerformed
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnAgregadosAdd;
     private javax.swing.JButton btnAgregadosDelete;
     private javax.swing.JButton btnAgregadosEdit;
+    private javax.swing.JButton btnCopyDetailRow;
     private javax.swing.JButton btnEdit;
     private javax.swing.JButton btnEventAdd;
     private javax.swing.JButton btnGeneratePDF;

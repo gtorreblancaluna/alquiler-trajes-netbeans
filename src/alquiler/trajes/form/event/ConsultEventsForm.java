@@ -4,11 +4,14 @@ import alquiler.trajes.constant.ApplicationConstants;
 import static alquiler.trajes.constant.ApplicationConstants.DATE_FORMAT_FOR_SQL_QUERY;
 import static alquiler.trajes.constant.ApplicationConstants.DATE_LARGE;
 import static alquiler.trajes.constant.ApplicationConstants.DECIMAL_FORMAT;
+import static alquiler.trajes.constant.ApplicationConstants.DESCRIPTION_FORMAT_24_HRS;
 import static alquiler.trajes.constant.ApplicationConstants.EMPTY_STRING_TXT_FIELD;
 import static alquiler.trajes.constant.ApplicationConstants.END_DAY_HOUR_MINUTES;
 import static alquiler.trajes.constant.ApplicationConstants.ENTER_KEY;
 import static alquiler.trajes.constant.ApplicationConstants.MESSAGE_NUMBER_FORMAT_ERROR;
+import static alquiler.trajes.constant.ApplicationConstants.PATH_NAME_DETAIL_REPORT_A4_HORIZONTAL;
 import static alquiler.trajes.constant.ApplicationConstants.PATH_NAME_EVENT_REPORT_VERTICAL_A5;
+import static alquiler.trajes.constant.ApplicationConstants.PDF_NAME_DETAIL_REPORT_A4_HORIZONTAL;
 import static alquiler.trajes.constant.ApplicationConstants.PDF_NAME_EVENT_REPORT_VERTICAL_A5;
 import static alquiler.trajes.constant.ApplicationConstants.SELECT_A_ROW_NECCESSARY;
 import static alquiler.trajes.constant.ApplicationConstants.START_DAY_HOUR_MINUTES;
@@ -20,9 +23,11 @@ import alquiler.trajes.exceptions.InvalidDataException;
 import alquiler.trajes.form.MainForm;
 import alquiler.trajes.model.params.EventParameter;
 import alquiler.trajes.model.params.result.EventResult;
+import alquiler.trajes.service.DetailEventService;
 import alquiler.trajes.service.EventResultService;
 import alquiler.trajes.service.EventService;
 import alquiler.trajes.service.GeneralInfoService;
+import alquiler.trajes.service.PaymentService;
 import alquiler.trajes.table.TableConsultEvents;
 import alquiler.trajes.util.JasperPrintUtil;
 import alquiler.trajes.util.Utility;
@@ -44,8 +49,10 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
     private final TableConsultEvents tableConsultEvents;
     private final EventResultService eventResultService;
     private final EventService eventService;
+    private final DetailEventService detailEventService;
     private final GeneralInfoService generalInfoService;
     private final JasperPrintUtil jasperPrintUtil;
+    private final PaymentService paymentService;
     private final FastDateFormat fastDateFormatLarge = FastDateFormat.getInstance(DATE_LARGE);
     private static final DecimalFormat decimalFormat = new DecimalFormat(DECIMAL_FORMAT);
     private final FastDateFormat fastDateFormatSqlQuery = FastDateFormat.getInstance(DATE_FORMAT_FOR_SQL_QUERY);
@@ -58,40 +65,34 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
         eventResultService = EventResultService.getInstance();
         generalInfoService = GeneralInfoService.getInstance();
         eventService = EventService.getInstance();
+        detailEventService = DetailEventService.getInstance();
+        paymentService = PaymentService.getInstance();
         tableConsultEvents = new TableConsultEvents();
         jasperPrintUtil = JasperPrintUtil.getInstance();
-        Utility.addJtableToPane(719, 451, this.panelTable, tableConsultEvents);
-        dateChooserInitDeliveryDate.setDate(new Date());
+        Utility.addJtableToPane(719, 451, this.panelTable, tableConsultEvents);        
         search(false);
         addEventListenerToTable();
     }
     
-    private String getPaymentsFromTableId (String id) {
-        
-        String payments = "0";
-        
-        for (int i = 0; i < tableConsultEvents.getRowCount(); i++) {
-            if (id.equals(
-                    String.valueOf(tableConsultEvents.getValueAt(i, TableConsultEvents.Column.ID.getNumber())))) {
-                payments = String.valueOf(
-                        tableConsultEvents.getValueAt(i, TableConsultEvents.Column.PAYMENTS.getNumber()));
+    private void generateEventsFoliosPDF () {
+         int LIMIT_ROWS_SELECTED = 100;         
+         Map parameters = new HashMap<>();
+         try {
+             List<String> ids = getEventIdsFromTable();
+             if (ids.size() > LIMIT_ROWS_SELECTED) {
+                JOptionPane.showMessageDialog(this, "Limite de folios seleccionados. Selecciona menos de: "+LIMIT_ROWS_SELECTED+" folios.", "Reporte", JOptionPane.INFORMATION_MESSAGE);
+                return;
             }
+             parameters.put("IDS", String.join(",", ids));
+             parameters.put("TITLE", "Informe por folios.");             
+             jasperPrintUtil.showPDF(parameters, PATH_NAME_DETAIL_REPORT_A4_HORIZONTAL, PDF_NAME_DETAIL_REPORT_A4_HORIZONTAL);
+         } catch (BusinessException e) {
+            log.error(e);
+           JOptionPane.showMessageDialog(
+                   this, e.getMessage(),
+                   ApplicationConstants.MESSAGE_UNEXPECTED_ERROR,
+                   JOptionPane.ERROR_MESSAGE);  
         }
-        return payments;
-    }
-    
-    private String getSubtotalFromTableId (String id) {
-        
-        String payments = "0";
-        
-        for (int i = 0; i < tableConsultEvents.getRowCount(); i++) {
-            if (id.equals(
-                    String.valueOf(tableConsultEvents.getValueAt(i, TableConsultEvents.Column.ID.getNumber())))) {
-                payments = String.valueOf(
-                        tableConsultEvents.getValueAt(i, TableConsultEvents.Column.SUB_TOTAL.getNumber()));
-            }
-        }
-        return payments;
     }
     
     private void generateEventPDF () {        
@@ -100,23 +101,28 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
         Map parameters = new HashMap<>();
         
         try {
-            String id = getEventIdFromTableOnlyOneRowSelected();
-            String payments = getPaymentsFromTableId(id);
-            String subtotal = getSubtotalFromTableId(id);
-            Event event = eventService.findById(Long.parseLong(id));
+            String id = Utility.getEventIdFromTableOnlyOneRowSelected(
+                    tableConsultEvents,
+                    TableConsultEvents.Column.BOOLEAN.getNumber(),
+                    TableConsultEvents.Column.ID.getNumber());
+            
+            Float sumPayment = paymentService.getPaymentsByEvent(Long.parseLong(id));
+            Float sumDetail = detailEventService.getSubtotalByEvent(Long.parseLong(id));
+            
+            final Event event = eventService.findById(Long.parseLong(id));
             parameters.put("ID", event.getId().toString());
             parameters.put("FOLIO", event.getId().toString());
             parameters.put("USER_NAME", event.getUser().getName()+" "+event.getUser().getLastName());
             parameters.put("CUSTOMER_NAME", event.getCustomer().getName()+" "+event.getCustomer().getLastName());
             parameters.put("TYPE_EVENT", event.getCatalogTypeEvent().getName());
             parameters.put("STATUS_EVENT", event.getCatalogStatusEvent().getName());
-            parameters.put("DELIVERY_DATE", fastDateFormatLarge.format(event.getDeliveryDate())+" "+event.getDeliveryHour()+" Hrs.");
-            parameters.put("RETURN_DATE", fastDateFormatLarge.format(event.getReturnDate())+" "+event.getReturnHour()+ " Hrs.");
+            parameters.put("DELIVERY_DATE", fastDateFormatLarge.format(event.getDeliveryDate())+" "+event.getDeliveryHour()+DESCRIPTION_FORMAT_24_HRS);
+            parameters.put("RETURN_DATE", fastDateFormatLarge.format(event.getReturnDate())+" "+event.getReturnHour()+DESCRIPTION_FORMAT_24_HRS);
             parameters.put("CREATED_AT_DATE", fastDateFormatLarge.format(event.getCreatedAt()));
             parameters.put("DESCRIPTION", event.getDescription());
-            parameters.put("PAYMENTS", decimalFormat.format(Float.parseFloat(payments)));
-            parameters.put("SUBTOTAL", decimalFormat.format(Float.parseFloat(subtotal)));
-            parameters.put("TOTAL", decimalFormat.format(Float.parseFloat(subtotal)-Float.parseFloat(payments)));
+            parameters.put("PAYMENTS", decimalFormat.format(sumPayment));
+            parameters.put("SUBTOTAL", decimalFormat.format(sumDetail));
+            parameters.put("TOTAL", decimalFormat.format(sumDetail-sumPayment));
             parameters.put("COMPANY_NAME", generalInfoService.getByKey(GeneralInfoEnum.COMPANY_NAME.getKey()));
             parameters.put("INFO_FOOTER_PDF_A5", generalInfoService.getByKey(GeneralInfoEnum.INFO_FOOTER_PDF_A5.getKey()));
             jasperPrintUtil.showPDF(parameters, PATH_NAME_EVENT_REPORT_VERTICAL_A5, PDF_NAME_EVENT_REPORT_VERTICAL_A5);
@@ -185,7 +191,16 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
         
     private void search(boolean check){
         try {
-            List<EventResult> results = eventResultService.getResult(getEventParameterFromInputs());
+            EventParameter eventParameter = getEventParameterFromInputs();
+            if (!check) {
+                // es primera consulta
+                eventParameter.setInitDeliveryDate(
+                        fastDateFormatSqlQuery.format(
+                                                new Date()) + START_DAY_HOUR_MINUTES
+                );
+            }
+            List<EventResult> results = eventResultService.getResult(eventParameter);
+            
             tableConsultEvents.format();
             DefaultTableModel temp = (DefaultTableModel) tableConsultEvents.getModel();
             for (EventResult result : results) {
@@ -239,10 +254,11 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
         dateChooserEndReturnDate = new com.toedter.calendar.JDateChooser();
         jLabel6 = new javax.swing.JLabel();
         txtFolio = new javax.swing.JTextField();
-        btnSearch = new javax.swing.JButton();
         btnCleanForm = new javax.swing.JButton();
         btnGoToEventForm = new javax.swing.JButton();
         btnGeneratePDF = new javax.swing.JButton();
+        btnGeneratePDFDetail = new javax.swing.JButton();
+        btnSearch = new javax.swing.JButton();
         panelTable = new javax.swing.JPanel();
 
         setPreferredSize(new java.awt.Dimension(1070, 648));
@@ -327,15 +343,6 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
             }
         });
 
-        btnSearch.setIcon(new javax.swing.ImageIcon(getClass().getResource("/alquiler/trajes/img/img32/search-32.png"))); // NOI18N
-        btnSearch.setToolTipText("Buscar");
-        btnSearch.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        btnSearch.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnSearchActionPerformed(evt);
-            }
-        });
-
         btnCleanForm.setIcon(new javax.swing.ImageIcon(getClass().getResource("/alquiler/trajes/img/img32/limpiar-32.png"))); // NOI18N
         btnCleanForm.setToolTipText("Limpiar formulario");
         btnCleanForm.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
@@ -363,6 +370,24 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
             }
         });
 
+        btnGeneratePDFDetail.setIcon(new javax.swing.ImageIcon(getClass().getResource("/alquiler/trajes/img/img32/pdf-32.png"))); // NOI18N
+        btnGeneratePDFDetail.setToolTipText("Ver PDF Folios");
+        btnGeneratePDFDetail.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnGeneratePDFDetail.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnGeneratePDFDetailActionPerformed(evt);
+            }
+        });
+
+        btnSearch.setIcon(new javax.swing.ImageIcon(getClass().getResource("/alquiler/trajes/img/img32/search-32.png"))); // NOI18N
+        btnSearch.setToolTipText("Buscar");
+        btnSearch.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnSearch.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnSearchActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
@@ -379,27 +404,31 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(txtCustomerName, javax.swing.GroupLayout.PREFERRED_SIZE, 168, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(jLabel2))))
-                .addGap(18, 18, 18)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                        .addComponent(txtFolio, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 51, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(txtFolio, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 51, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btnSearch, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btnCleanForm, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btnGoToEventForm, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btnGeneratePDF, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btnGeneratePDFDetail, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(jLabel6))
-                .addGap(18, 18, 18)
-                .addComponent(btnSearch, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(btnCleanForm, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(btnGoToEventForm, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(btnGeneratePDF, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(124, Short.MAX_VALUE))
+                .addContainerGap(96, Short.MAX_VALUE))
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(btnGeneratePDFDetail, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                             .addGroup(jPanel2Layout.createSequentialGroup()
@@ -410,21 +439,21 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
                                 .addComponent(jLabel1)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(txtDescription, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                        .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(btnSearch, javax.swing.GroupLayout.Alignment.TRAILING))
+                        .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(btnCleanForm)
                     .addComponent(btnGoToEventForm)
-                    .addComponent(btnGeneratePDF, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(btnGeneratePDF, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btnSearch))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel2Layout.createSequentialGroup()
                         .addComponent(jLabel6)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(txtFolio, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addContainerGap(45, Short.MAX_VALUE))
+                        .addContainerGap(26, Short.MAX_VALUE))
                     .addGroup(jPanel2Layout.createSequentialGroup()
                         .addComponent(jPanel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addGap(26, 26, 26))))
+                        .addContainerGap())))
         );
 
         javax.swing.GroupLayout panelTableLayout = new javax.swing.GroupLayout(panelTable);
@@ -435,7 +464,7 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
         );
         panelTableLayout.setVerticalGroup(
             panelTableLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 413, Short.MAX_VALUE)
+            .addGap(0, 396, Short.MAX_VALUE)
         );
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
@@ -514,7 +543,9 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
         eventForm.show();
     }
     
-    private String getEventIdFromTableOnlyOneRowSelected () throws BusinessException{
+
+    
+    private List<String> getEventIdsFromTable () throws BusinessException{
         
         List<String> ids = 
                 Utility.getColumnsIdByBooleanSelected(
@@ -523,17 +554,20 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
                         TableConsultEvents.Column.ID.getNumber()
                 );
         
-        if (ids.isEmpty() || (!ids.isEmpty() && ids.size() > 1)) {
+        if (ids.isEmpty()) {
             throw new BusinessException(SELECT_A_ROW_NECCESSARY);
         }
         
-        return ids.get(0);
+        return ids;
     }
     
     private void btnGoToEventFormActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGoToEventFormActionPerformed
        
         try {
-            showEventForm(getEventIdFromTableOnlyOneRowSelected());
+            showEventForm(Utility.getEventIdFromTableOnlyOneRowSelected(
+                    tableConsultEvents,
+                    TableConsultEvents.Column.BOOLEAN.getNumber(),
+                    TableConsultEvents.Column.ID.getNumber()));
         } catch (BusinessException e) {
             JOptionPane.showMessageDialog(
                    this, e.getMessage(),
@@ -563,10 +597,15 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
         cleanForm();
     }//GEN-LAST:event_btnCleanFormActionPerformed
 
+    private void btnGeneratePDFDetailActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGeneratePDFDetailActionPerformed
+        generateEventsFoliosPDF();
+    }//GEN-LAST:event_btnGeneratePDFDetailActionPerformed
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnCleanForm;
     private javax.swing.JButton btnGeneratePDF;
+    private javax.swing.JButton btnGeneratePDFDetail;
     private javax.swing.JButton btnGoToEventForm;
     private javax.swing.JButton btnSearch;
     private com.toedter.calendar.JDateChooser dateChooserEndDeliveryDate;

@@ -5,21 +5,17 @@ import java.io.InputStream;
 import java.util.Properties;
 import org.apache.log4j.Logger;
 
-public class PropertiesService {
+public final class PropertiesService {
     
-    private static PropertiesService INSTANCE = null;
+    private static PropertiesService SINGLE_INSTANCE;
     private Properties prop;
     private final static Logger LOGGER = Logger.getLogger(PropertiesService.class.getName());
-    
-    private synchronized static void createInstance() {
-        if (INSTANCE == null) {
-            INSTANCE = new PropertiesService();
-        }
-    }
-    
+        
     public static PropertiesService getInstance() {
-        if (INSTANCE == null) createInstance();
-            return INSTANCE;
+        if (SINGLE_INSTANCE == null) {
+            SINGLE_INSTANCE = new PropertiesService();
+        }
+        return SINGLE_INSTANCE;
     }
     
     private PropertiesService() {

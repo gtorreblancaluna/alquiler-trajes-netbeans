@@ -10,20 +10,20 @@ import java.util.Optional;
 import javax.persistence.NoResultException;
 import org.apache.log4j.Logger;
 
-public class CatalogTypeEventService {
+public final class CatalogTypeEventService {
     
     private CatalogTypeEventService(){}
     
     private static final Logger log = Logger.getLogger(CatalogTypeEventService.class.getName());
                 
-    private CatalogTypeEventDao catalogTypeEventDao = CatalogTypeEventDao.getInstance();
+    private final CatalogTypeEventDao catalogTypeEventDao = CatalogTypeEventDao.getInstance();
             
-    private static final CatalogTypeEventService SINGLE_INSTANCE = null;
+    private static CatalogTypeEventService SINGLE_INSTANCE;
         
-    public static CatalogTypeEventService getInstance(){
+   public static synchronized CatalogTypeEventService getInstance() {
         
         if (SINGLE_INSTANCE == null) {
-            return new CatalogTypeEventService();
+            SINGLE_INSTANCE = new CatalogTypeEventService();
         }
         return SINGLE_INSTANCE;
     }    

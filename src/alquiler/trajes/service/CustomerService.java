@@ -15,7 +15,7 @@ import javax.persistence.NoResultException;
 import org.apache.log4j.Logger;
 
 
-public class CustomerService {
+public final class CustomerService {
     
     private CustomerService(){}
     
@@ -23,12 +23,12 @@ public class CustomerService {
                 
     private CustomerDao customerDao = CustomerDao.getInstance();
             
-    private static final CustomerService SINGLE_INSTANCE = null;
+    private static CustomerService SINGLE_INSTANCE;
         
-    public static CustomerService getInstance(){
+   public static synchronized CustomerService getInstance() {
         
         if (SINGLE_INSTANCE == null) {
-            return new CustomerService();
+            SINGLE_INSTANCE = new CustomerService();
         }
         return SINGLE_INSTANCE;
     }

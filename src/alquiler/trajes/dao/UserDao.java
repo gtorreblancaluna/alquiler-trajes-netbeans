@@ -12,22 +12,20 @@ import javax.persistence.EntityManager;
 import javax.persistence.EntityTransaction;
 import javax.persistence.NoResultException;
 
-public class UserDao implements Dao<User> {
+public final class UserDao implements Dao<User> {
 
     static EntityManager em = PersistenceManager.getInstance().createEntityManager();
     
-    private UserDao () {
+    private UserDao () {}
+    private static UserDao SINGLE_INSTANCE;
         
-    }
-    private static final UserDao SINGLE_INSTANCE = null;
-        
-    public static UserDao getInstance(){
+   public static synchronized UserDao getInstance() {
         
         if (SINGLE_INSTANCE == null) {
-            return new UserDao();
+            SINGLE_INSTANCE = new UserDao();
         }
         return SINGLE_INSTANCE;
-    }
+    }    
 
     
     public User findByPasswd(final String passwordEncrypted) throws BusinessException{

@@ -6,16 +6,16 @@ import alquiler.trajes.model.params.result.EventResult;
 import java.util.List;
 
 
-public class EventResultService {
+public final class EventResultService {
     
-    private static final EventResultService SINGLE_INSTANCE = null;
+    private static EventResultService SINGLE_INSTANCE;
     
     private static final EventResultDao eventResultDao = EventResultDao.getInstance();
         
-    public static EventResultService getInstance(){
+    public static synchronized EventResultService getInstance() {
         
         if (SINGLE_INSTANCE == null) {
-            return new EventResultService();
+            SINGLE_INSTANCE = new EventResultService();
         }
         return SINGLE_INSTANCE;
     }

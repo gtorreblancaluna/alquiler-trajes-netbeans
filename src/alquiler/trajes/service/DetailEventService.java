@@ -10,7 +10,7 @@ import java.util.Optional;
 import javax.persistence.NoResultException;
 import org.apache.log4j.Logger;
 
-public class DetailEventService {
+public final class DetailEventService {
     
     private DetailEventService(){}
     
@@ -18,12 +18,12 @@ public class DetailEventService {
                 
     private DetailEventDao detailEventDao = DetailEventDao.getInstance();
             
-    private static final DetailEventService SINGLE_INSTANCE = null;
+    private static DetailEventService SINGLE_INSTANCE;
         
-    public static DetailEventService getInstance(){
+    public static synchronized DetailEventService getInstance() {
         
         if (SINGLE_INSTANCE == null) {
-            return new DetailEventService();
+            SINGLE_INSTANCE = new DetailEventService();
         }
         return SINGLE_INSTANCE;
     }
@@ -55,8 +55,19 @@ public class DetailEventService {
 
     }
     
-    public List<DetailEvent> getAll (Long eventId) throws BusinessException {
+    public List<DetailEvent> getAll (final Long eventId) throws BusinessException {
         return detailEventDao.getAll(eventId);
+    }
+    
+    public Float getSubtotalByEvent (final Long eventId) throws BusinessException {
+        List<DetailEvent> detail = getAll(eventId);
+        Float subTotal = 0F;
+        for (DetailEvent det : detail) {
+            if (det.getUnitPrice() != null){
+                subTotal += det.getUnitPrice();
+            }
+        }
+        return subTotal;
     }
     
 }
