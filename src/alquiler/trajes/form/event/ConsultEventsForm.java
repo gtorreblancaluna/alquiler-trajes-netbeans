@@ -17,6 +17,7 @@ import static alquiler.trajes.constant.ApplicationConstants.SELECT_A_ROW_NECCESS
 import static alquiler.trajes.constant.ApplicationConstants.START_DAY_HOUR_MINUTES;
 import static alquiler.trajes.constant.ApplicationConstants.TITLE_CONSULT_EVENTS_FORM;
 import alquiler.trajes.constant.GeneralInfoEnum;
+import alquiler.trajes.entity.DetailEvent;
 import alquiler.trajes.entity.Event;
 import alquiler.trajes.exceptions.BusinessException;
 import alquiler.trajes.exceptions.InvalidDataException;
@@ -28,7 +29,10 @@ import alquiler.trajes.service.EventResultService;
 import alquiler.trajes.service.EventService;
 import alquiler.trajes.service.GeneralInfoService;
 import alquiler.trajes.service.PaymentService;
+import alquiler.trajes.service.TicketService;
 import alquiler.trajes.table.TableConsultEvents;
+import alquiler.trajes.ticket.EventTicket;
+import alquiler.trajes.ticket.TicketTemplate;
 import alquiler.trajes.util.JasperPrintUtil;
 import alquiler.trajes.util.Utility;
 import java.awt.event.MouseAdapter;
@@ -38,6 +42,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.print.PrintException;
 import javax.swing.JOptionPane;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
@@ -53,6 +58,7 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
     private final GeneralInfoService generalInfoService;
     private final JasperPrintUtil jasperPrintUtil;
     private final PaymentService paymentService;
+    private final TicketService ticketService;
     private final FastDateFormat fastDateFormatLarge = FastDateFormat.getInstance(DATE_LARGE);
     private static final DecimalFormat decimalFormat = new DecimalFormat(DECIMAL_FORMAT);
     private final FastDateFormat fastDateFormatSqlQuery = FastDateFormat.getInstance(DATE_FORMAT_FOR_SQL_QUERY);
@@ -64,6 +70,7 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
         this.setClosable(Boolean.TRUE);
         eventResultService = EventResultService.getInstance();
         generalInfoService = GeneralInfoService.getInstance();
+        ticketService = TicketService.getInstance();
         eventService = EventService.getInstance();
         detailEventService = DetailEventService.getInstance();
         paymentService = PaymentService.getInstance();
@@ -94,7 +101,37 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
                    JOptionPane.ERROR_MESSAGE);  
         }
     }
-    
+    private void generateTicket () {
+        try {
+            String id = Utility.getEventIdFromTableOnlyOneRowSelected(
+                    tableConsultEvents,
+                    TableConsultEvents.Column.BOOLEAN.getNumber(),
+                    TableConsultEvents.Column.ID.getNumber());
+            
+            Float sumPayment = paymentService.getPaymentsByEvent(Long.parseLong(id));
+            Float sumDetail = detailEventService.getSubtotalByEvent(Long.parseLong(id));
+            
+            final Event event = eventService.findById(Long.parseLong(id));
+            final List<DetailEvent> detailEvent = detailEventService.getAll(Long.parseLong(id));
+            
+            
+            TicketTemplate ticket = new EventTicket(
+                    event,
+                    detailEvent,
+                    sumDetail,
+                    sumPayment
+            );
+            
+            ticketService.printTicket(ticket);
+            
+        } catch (BusinessException | PrintException e) {
+            log.error(e);
+           JOptionPane.showMessageDialog(
+                   this, e.getMessage(),
+                   ApplicationConstants.MESSAGE_UNEXPECTED_ERROR,
+                   JOptionPane.ERROR_MESSAGE);  
+        }
+    }
     private void generateEventPDF () {        
         
         
@@ -259,6 +296,7 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
         btnGeneratePDF = new javax.swing.JButton();
         btnGeneratePDFDetail = new javax.swing.JButton();
         btnSearch = new javax.swing.JButton();
+        btnGenerateTicket = new javax.swing.JButton();
         panelTable = new javax.swing.JPanel();
 
         setPreferredSize(new java.awt.Dimension(1070, 648));
@@ -388,6 +426,15 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
             }
         });
 
+        btnGenerateTicket.setIcon(new javax.swing.ImageIcon(getClass().getResource("/alquiler/trajes/img/img32/impresora-32.png"))); // NOI18N
+        btnGenerateTicket.setToolTipText("Generar ticket");
+        btnGenerateTicket.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnGenerateTicket.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnGenerateTicketActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
@@ -419,9 +466,11 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(btnGeneratePDF, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(btnGeneratePDFDetail, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(btnGeneratePDFDetail, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btnGenerateTicket, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(jLabel6))
-                .addContainerGap(96, Short.MAX_VALUE))
+                .addContainerGap(50, Short.MAX_VALUE))
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -443,17 +492,17 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
                     .addComponent(btnCleanForm)
                     .addComponent(btnGoToEventForm)
                     .addComponent(btnGeneratePDF, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnSearch))
+                    .addComponent(btnSearch)
+                    .addComponent(btnGenerateTicket, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel2Layout.createSequentialGroup()
                         .addComponent(jLabel6)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(txtFolio, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addContainerGap(26, Short.MAX_VALUE))
-                    .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addComponent(jPanel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addContainerGap())))
+                        .addGap(0, 13, Short.MAX_VALUE))
+                    .addComponent(jPanel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap())
         );
 
         javax.swing.GroupLayout panelTableLayout = new javax.swing.GroupLayout(panelTable);
@@ -601,11 +650,16 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
         generateEventsFoliosPDF();
     }//GEN-LAST:event_btnGeneratePDFDetailActionPerformed
 
+    private void btnGenerateTicketActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGenerateTicketActionPerformed
+        generateTicket();
+    }//GEN-LAST:event_btnGenerateTicketActionPerformed
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnCleanForm;
     private javax.swing.JButton btnGeneratePDF;
     private javax.swing.JButton btnGeneratePDFDetail;
+    private javax.swing.JButton btnGenerateTicket;
     private javax.swing.JButton btnGoToEventForm;
     private javax.swing.JButton btnSearch;
     private com.toedter.calendar.JDateChooser dateChooserEndDeliveryDate;

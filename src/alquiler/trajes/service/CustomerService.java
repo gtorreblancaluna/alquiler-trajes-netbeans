@@ -21,7 +21,7 @@ public final class CustomerService {
     
     private static final Logger log = Logger.getLogger(CustomerService.class.getName());
                 
-    private CustomerDao customerDao = CustomerDao.getInstance();
+    private final CustomerDao customerDao = CustomerDao.getInstance();
             
     private static CustomerService SINGLE_INSTANCE;
         
