@@ -29,9 +29,12 @@ import alquiler.trajes.service.DetailEventService;
 import alquiler.trajes.service.EventService;
 import alquiler.trajes.service.GeneralInfoService;
 import alquiler.trajes.service.PaymentService;
+import alquiler.trajes.service.TicketService;
 import alquiler.trajes.table.TableFormatDetail;
 import alquiler.trajes.table.TableFormatCustomers;
 import alquiler.trajes.table.TableFormatPayments;
+import alquiler.trajes.ticket.EventTicket;
+import alquiler.trajes.ticket.TicketTemplate;
 import alquiler.trajes.util.JasperPrintUtil;
 import alquiler.trajes.util.Utility;
 import static alquiler.trajes.util.Utility.onlyAdminUserAccess;
@@ -48,6 +51,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import javax.print.PrintException;
 import javax.swing.JOptionPane;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
@@ -63,6 +67,7 @@ public class EventForm extends javax.swing.JInternalFrame {
     private final static int INDEX_CUSTOMER_PANE = 0;
     private final static int INDEX_EVENT_PANE = 1;
     private final CustomerService customerService;
+    private final TicketService ticketService;
     private final TableFormatCustomers customersTableFormat;
     private final TableFormatDetail tableFormatDetail;
     private final TableFormatPayments tableFormatPayments;
@@ -94,6 +99,7 @@ public class EventForm extends javax.swing.JInternalFrame {
         catalogTypeEventService = CatalogTypeEventService.getInstance();
         catalogStatusEventService = CatalogStatusEventService.getInstance();
         generalInfoService = GeneralInfoService.getInstance();
+        ticketService = TicketService.getInstance();
         jasperPrintUtil = JasperPrintUtil.getInstance();
         paymentService = PaymentService.getInstance();
         detailEventService = DetailEventService.getInstance();
@@ -121,7 +127,46 @@ public class EventForm extends javax.swing.JInternalFrame {
         addMouseListenerToTablePayments();
 
     }
-    
+    private void generateTicket () {
+        if (this.event.getId() == null) {
+            JOptionPane.showMessageDialog(
+                   this, "Guarda el evento para generar el PDF.",
+                   ApplicationConstants.MESSAGE_MISSING_PARAMETERS,
+                   JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        
+        float sumPayment = 0f;
+        float sumDetail = 0f;
+
+        for (DetailEvent det : this.detailEvent) {
+            if (det.getUnitPrice() != null){
+                sumDetail += det.getUnitPrice();
+            }
+        }
+
+        for (Payment payment : this.paymentsEvent) {
+            if (payment.getPayment() != null) {
+                sumPayment += payment.getPayment();
+            }
+        }
+
+        TicketTemplate ticket = new EventTicket(
+                event,
+                detailEvent,
+                sumDetail,
+                sumPayment
+        );
+        try {
+            ticketService.printTicket(ticket);
+        } catch (PrintException e) {
+            log.error(e);
+           JOptionPane.showMessageDialog(
+                   this, e.getMessage(),
+                   ApplicationConstants.MESSAGE_UNEXPECTED_ERROR,
+                   JOptionPane.ERROR_MESSAGE); 
+        }
+    }
     private void generateEventPDF () {
         
         if (this.event.getId() == null) {
@@ -311,6 +356,7 @@ public class EventForm extends javax.swing.JInternalFrame {
       btnPaymentsEdit.setEnabled(true);
       btnEdit.setEnabled(false);
       btnSave.setEnabled(true);
+      btnCopyDetailRow.setEnabled(true);
     }
     
     private void disableForm () {
@@ -334,6 +380,7 @@ public class EventForm extends javax.swing.JInternalFrame {
       btnEdit.setVisible(true);
       btnEdit.setEnabled(true);
       btnSave.setEnabled(false);
+      btnCopyDetailRow.setEnabled(false);
     }
     
     private void save () {
@@ -705,6 +752,7 @@ public class EventForm extends javax.swing.JInternalFrame {
         btnSave = new javax.swing.JButton();
         btnGeneratePDF = new javax.swing.JButton();
         btnEventAdd = new javax.swing.JButton();
+        btnGenerateTicket = new javax.swing.JButton();
         jScrollPane2 = new javax.swing.JScrollPane();
         txtAreaDescription = new javax.swing.JTextPane();
         cmbStatus = new javax.swing.JComboBox<>();
@@ -957,7 +1005,7 @@ public class EventForm extends javax.swing.JInternalFrame {
         );
         panelInnerTableAgregadosLayout.setVerticalGroup(
             panelInnerTableAgregadosLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 264, Short.MAX_VALUE)
+            .addGap(0, 276, Short.MAX_VALUE)
         );
 
         btnAgregadosEdit.setIcon(new javax.swing.ImageIcon(getClass().getResource("/alquiler/trajes/img/img32/edit-32.png"))); // NOI18N
@@ -1024,7 +1072,7 @@ public class EventForm extends javax.swing.JInternalFrame {
                 .addComponent(btnAgregadosDelete)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(btnCopyDetailRow)
-                .addContainerGap(74, Short.MAX_VALUE))
+                .addContainerGap(78, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout panelInnerAddsLayout = new javax.swing.GroupLayout(panelInnerAdds);
@@ -1161,7 +1209,7 @@ public class EventForm extends javax.swing.JInternalFrame {
                 .addComponent(jLabel20)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(txtPaymentsConcept, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(154, Short.MAX_VALUE))
+                .addContainerGap(166, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout panelInnerPaymetsTableLayout = new javax.swing.GroupLayout(panelInnerPaymetsTable);
@@ -1244,7 +1292,7 @@ public class EventForm extends javax.swing.JInternalFrame {
         });
 
         btnGeneratePDF.setIcon(new javax.swing.ImageIcon(getClass().getResource("/alquiler/trajes/img/img32/descargar-pdf-32.png"))); // NOI18N
-        btnGeneratePDF.setToolTipText("Editar");
+        btnGeneratePDF.setToolTipText("Generar PDF");
         btnGeneratePDF.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
         btnGeneratePDF.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -1261,12 +1309,23 @@ public class EventForm extends javax.swing.JInternalFrame {
             }
         });
 
+        btnGenerateTicket.setIcon(new javax.swing.ImageIcon(getClass().getResource("/alquiler/trajes/img/img32/impresora-32.png"))); // NOI18N
+        btnGenerateTicket.setToolTipText("Generar ticket");
+        btnGenerateTicket.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnGenerateTicket.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnGenerateTicketActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
         jPanel4.setLayout(jPanel4Layout);
         jPanel4Layout.setHorizontalGroup(
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel4Layout.createSequentialGroup()
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(btnGenerateTicket, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(btnGeneratePDF, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(btnEventAdd, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -1280,7 +1339,8 @@ public class EventForm extends javax.swing.JInternalFrame {
             .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
                 .addComponent(btnSave, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(btnEdit, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(btnGeneratePDF, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addComponent(btnGeneratePDF, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(btnGenerateTicket, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
             .addComponent(btnEventAdd)
         );
 
@@ -1319,7 +1379,7 @@ public class EventForm extends javax.swing.JInternalFrame {
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(jPanel3Layout.createSequentialGroup()
                                 .addGap(83, 83, 83)
-                                .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
                             .addGroup(jPanel3Layout.createSequentialGroup()
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(jScrollPane2)))
@@ -1770,6 +1830,10 @@ public class EventForm extends javax.swing.JInternalFrame {
         }
     }//GEN-LAST:event_btnCopyDetailRowActionPerformed
 
+    private void btnGenerateTicketActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGenerateTicketActionPerformed
+        generateTicket();
+    }//GEN-LAST:event_btnGenerateTicketActionPerformed
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnAgregadosAdd;
@@ -1779,6 +1843,7 @@ public class EventForm extends javax.swing.JInternalFrame {
     private javax.swing.JButton btnEdit;
     private javax.swing.JButton btnEventAdd;
     private javax.swing.JButton btnGeneratePDF;
+    private javax.swing.JButton btnGenerateTicket;
     private javax.swing.JButton btnPaymentsDelete;
     private javax.swing.JButton btnPaymentsEdit;
     private javax.swing.JButton btnPaymentsSave;
