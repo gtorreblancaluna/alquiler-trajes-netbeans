@@ -1,6 +1,10 @@
 package alquiler.trajes.ticket;
 
 import static alquiler.trajes.constant.ApplicationConstants.DATE_MEDIUM;
+import alquiler.trajes.constant.GeneralInfoEnum;
+import alquiler.trajes.exceptions.BusinessException;
+import alquiler.trajes.service.GeneralInfoService;
+import alquiler.trajes.util.UtilityTicket;
 import java.util.Date;
 import javax.print.Doc;
 import javax.print.DocFlavor;
@@ -22,6 +26,11 @@ public abstract class TicketTemplate {
     
     private static final Logger log = Logger.getLogger(TicketTemplate.class.getName());
     protected final FastDateFormat dateFormat = FastDateFormat.getInstance(DATE_MEDIUM);
+    private final GeneralInfoService generalInfoService;
+    
+    protected TicketTemplate () {
+        generalInfoService = GeneralInfoService.getInstance();
+    }
     
     protected void setBody (final String body) {
         this.body = body;
@@ -38,16 +47,44 @@ public abstract class TicketTemplate {
     //default implementation
     private void buildHeader() {
         System.out.println("Building Header");
+        StringBuilder headerBuilder = new StringBuilder();
+        try {
+            final String companyName = 
+                    generalInfoService.getByKey(GeneralInfoEnum.COMPANY_NAME.getKey());
+            
+            if (companyName.length() > LENGHT_BY_LINE) {
+                headerBuilder.append(companyName.substring(0,LENGHT_BY_LINE));
+            } else {
+                headerBuilder.append(UtilityTicket.center(companyName,LENGHT_BY_LINE));
+            }
+            
+            headerBuilder.append(LINE_BREAK);
+            headerBuilder.append(UtilityTicket.center("Agradecemos su preferencia.",LENGHT_BY_LINE));
+            this.header = headerBuilder.toString();
+        } catch (BusinessException e) {
+        }        
     }
     
     //default implementation
     private void buildFooter() {
         System.out.println("Building Footer");
-        this.footer = "Fecha impresión: "+ dateFormat.format(new Date());
+        StringBuilder footerBuilder = new StringBuilder();
+        try {
+            String infoFooter = generalInfoService.getByKey(GeneralInfoEnum.INFO_FOOTER_PDF_A5.getKey());
+            UtilityTicket.appendLargeStringToStringBuilderByLengthToPrinterTermica(
+                    footerBuilder, 
+                    LENGHT_BY_LINE, 
+                    infoFooter, 
+                    LINE_BREAK,6);
+            footerBuilder.append(LINE_BREAK);
+        } catch (BusinessException e) {
+        }   
+        footerBuilder.append("Fecha impresión: ").append(dateFormat.format(new Date()));
+        this.footer = footerBuilder.toString();
     }
     
     //method to be implemented by subclass
-    public abstract void buildBody();
+    protected abstract void buildBody();
     
     //template method, final so subclasses can't override
     public final void generateTicket() throws PrintException{
@@ -57,13 +94,22 @@ public abstract class TicketTemplate {
             buildBody();
             
             StringBuilder contentTicket = new StringBuilder();
-            contentTicket.append(header).append(LINE_BREAK)
-                    .append(LINE).append(LINE_BREAK)
+            contentTicket
+                    .append(LINE_BREAK)
+                    .append(LINE_BREAK)
+                    .append(LINE)
+                    .append(LINE_BREAK)
+                    .append(header)
+                    .append(LINE_BREAK)
+                    .append(LINE)
+                    .append(LINE_BREAK)
                     .append(body)
                     .append(LINE).append(LINE_BREAK)
-                    .append(footer);
+                    .append(footer)
+                    .append(LINE_BREAK)
+                    .append(LINE_BREAK);
             
-            log.info("Ticket generated: \n"+contentTicket.toString());
+            System.out.println("Ticket generated: \n"+contentTicket.toString());
             
             //Especificamos el tipo de dato a imprimir
             //Tipo: bytes; Subtipo: autodetectado

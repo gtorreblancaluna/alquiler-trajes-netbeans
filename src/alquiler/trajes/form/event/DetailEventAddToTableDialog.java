@@ -6,8 +6,15 @@ import static alquiler.trajes.constant.ApplicationConstants.TITLE_DETAIL_EVENT_D
 import alquiler.trajes.entity.DetailEvent;
 import alquiler.trajes.exceptions.InvalidDataException;
 import alquiler.trajes.util.Utility;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
+import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JOptionPane;
+import javax.swing.KeyStroke;
 
 
 public class DetailEventAddToTableDialog extends javax.swing.JDialog {
@@ -17,7 +24,7 @@ public class DetailEventAddToTableDialog extends javax.swing.JDialog {
     public DetailEventAddToTableDialog(java.awt.Frame parent, boolean modal, DetailEvent detail) {
         super(parent, modal);
         initComponents();
-        this.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+        //this.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
         this.pack();
         this.setLocationRelativeTo(null);
         this.setTitle(TITLE_DETAIL_EVENT_DIALOG_FORM);
@@ -26,7 +33,64 @@ public class DetailEventAddToTableDialog extends javax.swing.JDialog {
             detailToReturn.setId(detail.getId());
         }
         txtName.requestFocus();
-        
+        addEscapeListener();
+        addEventListener();
+    }
+    
+    private void addEventListener () {
+    
+        this.addWindowListener(new WindowListener() {
+
+                @Override
+                public void windowActivated(WindowEvent arg0) {
+                    // Do nothing
+                }
+                @Override
+                public void windowClosed(WindowEvent arg0) {
+                    System.out.println("windowClosed");
+                    detailToReturn = null;
+                    setVisible(false);
+                    dispose();
+                }
+                @Override
+                public void windowClosing(WindowEvent arg0) {
+                    System.out.println("windowClosing");
+                    detailToReturn = null;
+                    setVisible(false);
+                    dispose();
+                }
+                @Override
+                public void windowDeactivated(WindowEvent arg0) {
+                    // Do nothing
+                }
+                @Override
+                public void windowDeiconified(WindowEvent arg0) {
+                    // Do nothing
+                }
+                @Override
+                public void windowIconified(WindowEvent arg0) {
+                    // Do nothing
+                }
+                @Override
+                public void windowOpened(WindowEvent arg0) {
+                    // Do nothing
+                }
+
+            });
+    }
+    
+    // close dialog when esc is pressed.
+    private void addEscapeListener() {
+        ActionListener escListener = (ActionEvent e) -> {
+            detailToReturn = null;
+            setVisible(false);
+            dispose();
+        };
+
+        this.getRootPane().registerKeyboardAction(escListener,
+                KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
+                JComponent.WHEN_IN_FOCUSED_WINDOW);
+
     }
     
     private void fillDetailToInputs (DetailEvent detail) {
@@ -93,8 +157,10 @@ public class DetailEventAddToTableDialog extends javax.swing.JDialog {
         btnCancel = new javax.swing.JButton();
         txtImport = new javax.swing.JFormattedTextField();
         txtPayment = new javax.swing.JFormattedTextField();
-        txtConcepts = new javax.swing.JTextField();
-        txtAdjuts = new javax.swing.JTextField();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        txtConcepts = new javax.swing.JTextPane();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        txtAdjuts = new javax.swing.JTextPane();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
@@ -142,17 +208,9 @@ public class DetailEventAddToTableDialog extends javax.swing.JDialog {
             }
         });
 
-        txtConcepts.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyPressed(java.awt.event.KeyEvent evt) {
-                txtConceptsKeyPressed(evt);
-            }
-        });
+        jScrollPane1.setViewportView(txtConcepts);
 
-        txtAdjuts.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyPressed(java.awt.event.KeyEvent evt) {
-                txtAdjutsKeyPressed(evt);
-            }
-        });
+        jScrollPane2.setViewportView(txtAdjuts);
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -166,23 +224,23 @@ public class DetailEventAddToTableDialog extends javax.swing.JDialog {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(txtPayment))
                     .addComponent(txtName)
-                    .addComponent(txtConcepts)
+                    .addComponent(jScrollPane1)
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(jPanel1Layout.createSequentialGroup()
                                 .addComponent(jLabel1)
-                                .addGap(226, 226, 226)
+                                .addGap(216, 216, 216)
                                 .addComponent(btnOK)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                                 .addComponent(btnCancel))
                             .addComponent(jLabel2)
                             .addGroup(jPanel1Layout.createSequentialGroup()
                                 .addComponent(jLabel4)
-                                .addGap(236, 236, 236)
+                                .addGap(166, 166, 166)
                                 .addComponent(jLabel5))
                             .addComponent(jLabel3))
                         .addGap(0, 0, Short.MAX_VALUE))
-                    .addComponent(txtAdjuts))
+                    .addComponent(jScrollPane2))
                 .addContainerGap())
         );
         jPanel1Layout.setVerticalGroup(
@@ -195,11 +253,11 @@ public class DetailEventAddToTableDialog extends javax.swing.JDialog {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jLabel2)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(txtConcepts, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jLabel3)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 82, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(txtAdjuts, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jLabel3)
+                .addGap(5, 5, 5)
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 86, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel4)
@@ -245,6 +303,7 @@ public class DetailEventAddToTableDialog extends javax.swing.JDialog {
         }
     }
     
+    
     private void btnOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnOKActionPerformed
         sendData();
     }//GEN-LAST:event_btnOKActionPerformed
@@ -272,18 +331,6 @@ public class DetailEventAddToTableDialog extends javax.swing.JDialog {
             sendData();
         }
     }//GEN-LAST:event_txtPaymentKeyPressed
-
-    private void txtConceptsKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtConceptsKeyPressed
-        if (evt.getKeyCode() == ENTER_KEY) {
-            sendData();
-        }
-    }//GEN-LAST:event_txtConceptsKeyPressed
-
-    private void txtAdjutsKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtAdjutsKeyPressed
-        if (evt.getKeyCode() == ENTER_KEY) {
-            sendData();
-        }
-    }//GEN-LAST:event_txtAdjutsKeyPressed
 
     /**
      * @param args the command line arguments
@@ -337,8 +384,10 @@ public class DetailEventAddToTableDialog extends javax.swing.JDialog {
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
     private javax.swing.JPanel jPanel1;
-    private javax.swing.JTextField txtAdjuts;
-    private javax.swing.JTextField txtConcepts;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JTextPane txtAdjuts;
+    private javax.swing.JTextPane txtConcepts;
     private javax.swing.JFormattedTextField txtImport;
     private javax.swing.JTextField txtName;
     private javax.swing.JFormattedTextField txtPayment;

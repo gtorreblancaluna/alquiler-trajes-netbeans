@@ -2,8 +2,11 @@ package alquiler.trajes.constant;
 
 public interface ApplicationConstants {
     
-    public static final String DESCRIPTION_FORMAT_24_HRS = " Hrs.";
+    public static final String LOCALE_LANGUAGE = "es";
+    public static final String LOCALE_COUNTRY = "MX";
     
+    public static final String DESCRIPTION_FORMAT_24_HRS = " Hrs.";
+    public static final String DELETE_CHARS_NUMBER = "$,";
     public static final String EMPTY_STRING_TXT_FIELD = "";
     public static final String START_DAY_HOUR_MINUTES = " 00:01";
     public static final String END_DAY_HOUR_MINUTES = " 23:59";

@@ -8,6 +8,8 @@ import static alquiler.trajes.constant.ApplicationConstants.DESCRIPTION_FORMAT_2
 import static alquiler.trajes.constant.ApplicationConstants.EMPTY_STRING_TXT_FIELD;
 import static alquiler.trajes.constant.ApplicationConstants.END_DAY_HOUR_MINUTES;
 import static alquiler.trajes.constant.ApplicationConstants.ENTER_KEY;
+import static alquiler.trajes.constant.ApplicationConstants.LOCALE_COUNTRY;
+import static alquiler.trajes.constant.ApplicationConstants.LOCALE_LANGUAGE;
 import static alquiler.trajes.constant.ApplicationConstants.MESSAGE_NUMBER_FORMAT_ERROR;
 import static alquiler.trajes.constant.ApplicationConstants.PATH_NAME_DETAIL_REPORT_A4_HORIZONTAL;
 import static alquiler.trajes.constant.ApplicationConstants.PATH_NAME_EVENT_REPORT_VERTICAL_A5;
@@ -29,7 +31,6 @@ import alquiler.trajes.service.EventResultService;
 import alquiler.trajes.service.EventService;
 import alquiler.trajes.service.GeneralInfoService;
 import alquiler.trajes.service.PaymentService;
-import alquiler.trajes.service.TicketService;
 import alquiler.trajes.table.TableConsultEvents;
 import alquiler.trajes.ticket.EventTicket;
 import alquiler.trajes.ticket.TicketTemplate;
@@ -41,6 +42,7 @@ import java.text.DecimalFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import javax.print.PrintException;
 import javax.swing.JOptionPane;
@@ -58,11 +60,11 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
     private final GeneralInfoService generalInfoService;
     private final JasperPrintUtil jasperPrintUtil;
     private final PaymentService paymentService;
-    private final TicketService ticketService;
-    private final FastDateFormat fastDateFormatLarge = FastDateFormat.getInstance(DATE_LARGE);
+    private final FastDateFormat fastDateFormatLarge;
     private static final DecimalFormat decimalFormat = new DecimalFormat(DECIMAL_FORMAT);
     private final FastDateFormat fastDateFormatSqlQuery = FastDateFormat.getInstance(DATE_FORMAT_FOR_SQL_QUERY);
     private static final org.apache.log4j.Logger log = org.apache.log4j.Logger.getLogger(ConsultEventsForm.class.getName());
+    private final Locale locale;
     
     public ConsultEventsForm() {
         initComponents();
@@ -70,12 +72,13 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
         this.setClosable(Boolean.TRUE);
         eventResultService = EventResultService.getInstance();
         generalInfoService = GeneralInfoService.getInstance();
-        ticketService = TicketService.getInstance();
         eventService = EventService.getInstance();
         detailEventService = DetailEventService.getInstance();
         paymentService = PaymentService.getInstance();
         tableConsultEvents = new TableConsultEvents();
         jasperPrintUtil = JasperPrintUtil.getInstance();
+        locale = new Locale(LOCALE_LANGUAGE, LOCALE_COUNTRY);
+        fastDateFormatLarge = FastDateFormat.getInstance(DATE_LARGE,locale);
         Utility.addJtableToPane(719, 451, this.panelTable, tableConsultEvents);        
         search(false);
         addEventListenerToTable();
@@ -114,7 +117,6 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
             final Event event = eventService.findById(Long.parseLong(id));
             final List<DetailEvent> detailEvent = detailEventService.getAll(Long.parseLong(id));
             
-            
             TicketTemplate ticket = new EventTicket(
                     event,
                     detailEvent,
@@ -122,7 +124,7 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
                     sumPayment
             );
             
-            ticketService.printTicket(ticket);
+            ticket.generateTicket();
             
         } catch (BusinessException | PrintException e) {
             log.error(e);
@@ -138,6 +140,7 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
         Map parameters = new HashMap<>();
         
         try {
+            
             String id = Utility.getEventIdFromTableOnlyOneRowSelected(
                     tableConsultEvents,
                     TableConsultEvents.Column.BOOLEAN.getNumber(),
@@ -163,6 +166,7 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
             parameters.put("COMPANY_NAME", generalInfoService.getByKey(GeneralInfoEnum.COMPANY_NAME.getKey()));
             parameters.put("INFO_FOOTER_PDF_A5", generalInfoService.getByKey(GeneralInfoEnum.INFO_FOOTER_PDF_A5.getKey()));
             jasperPrintUtil.showPDF(parameters, PATH_NAME_EVENT_REPORT_VERTICAL_A5, PDF_NAME_EVENT_REPORT_VERTICAL_A5);
+            
         } catch (BusinessException e) {
             log.error(e);
            JOptionPane.showMessageDialog(

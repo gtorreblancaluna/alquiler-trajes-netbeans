@@ -30,6 +30,8 @@ public abstract class Utility {
     private static final int POSITION_MINUTE = 1;
     private static final String ZERO_ID_FOR_NEW_ELEMENT = "0";
     
+
+    
     public static void cloneRowsCheckedTable (JTable table,
                 int columnNumberBoolean, int columnIdNumber) throws BusinessException{
         

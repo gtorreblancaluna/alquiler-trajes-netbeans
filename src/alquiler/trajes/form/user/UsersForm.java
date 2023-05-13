@@ -36,7 +36,7 @@ public class UsersForm extends javax.swing.JInternalFrame {
         this.setTitle(ApplicationConstants.TITLE_USERS_FORM);
         userService = UserService.getInstance();
         fillTable();
-        initButtons();
+        disableForm();
     }
     
     private void cleanInputs () {
@@ -47,8 +47,22 @@ public class UsersForm extends javax.swing.JInternalFrame {
         this.txtRepeatPasswd.setText(EMPTY_STRING_TXT_FIELD);
     }
     
-    private void initButtons () {
+    private void disableForm () {
         this.btnSave.setEnabled(false);
+        this.txtName.setEnabled(false);
+        this.txtLastName.setEnabled(false);
+        this.txtPhoneNumber.setEnabled(false);
+    }
+    
+    private void enableForm () {
+        this.btnSave.setEnabled(true);
+        this.txtName.setEnabled(true);
+        this.txtLastName.setEnabled(true);
+        this.txtPhoneNumber.setEnabled(true);
+        this.txtName.requestFocus();
+        this.btnSave.setEnabled(true);
+        this.setVisibleOnPasswordTxtFields();
+        idUserToEdit = null;
     }
     
     private void setVisibleOnPasswordTxtFields () {
@@ -412,10 +426,8 @@ public class UsersForm extends javax.swing.JInternalFrame {
 
     private void btnAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAddActionPerformed
        cleanInputs();
-       this.txtName.requestFocus();
-       this.btnSave.setEnabled(true);
-       this.setVisibleOnPasswordTxtFields();
-       idUserToEdit = null;
+       enableForm();
+       
     }//GEN-LAST:event_btnAddActionPerformed
     private void validatePasswd () throws InvalidDataException{
         if (txtPasswd.getPassword().length <= 0 || txtRepeatPasswd.getPassword().length <= 0) {
@@ -454,7 +466,7 @@ public class UsersForm extends javax.swing.JInternalFrame {
             user.setRoles(roles);
             userService.saveOrUpdate(user);
             fillTable();
-            initButtons();
+            disableForm();
             cleanInputs();
             lblInfo.setText(ApplicationConstants.MESSAGE_SAVE_SUCCESSFUL);
         } catch (BusinessException e) {
@@ -473,12 +485,14 @@ public class UsersForm extends javax.swing.JInternalFrame {
         String id = String.valueOf(table.getValueAt(table.getSelectedRow(), Column.ID.number));
         this.txtName.requestFocus();
         this.btnSave.setEnabled(true);
+        this.enableForm();
         try {
             User user = userService.findById(Long.parseLong(id));
             this.txtName.setText(user.getName());
             this.txtLastName.setText(user.getLastName());
             this.txtPhoneNumber.setText(user.getPhoneNumber());
             idUserToEdit = String.valueOf(user.getId());
+            this.setVisibleOffPasswordTxtFields();
         } catch (BusinessException e) {
             JOptionPane.showMessageDialog(this, e.getMessage(),
                     ApplicationConstants.MESSAGE_UNEXPECTED_ERROR, JOptionPane.ERROR_MESSAGE);

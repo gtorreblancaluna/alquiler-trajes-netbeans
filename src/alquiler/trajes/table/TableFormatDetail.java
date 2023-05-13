@@ -1,19 +1,39 @@
 package alquiler.trajes.table;
 
 import alquiler.trajes.constant.ApplicationConstants;
+import java.awt.Component;
 import java.awt.Font;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JTable;
+import javax.swing.JTextArea;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableModel;
 import javax.swing.table.TableRowSorter;
 import lombok.Getter;
 
 public class TableFormatDetail extends JTable {
+    
+    static class WordWrapCellRenderer extends JTextArea implements TableCellRenderer {
+        WordWrapCellRenderer() {
+            setLineWrap(true);
+            setWrapStyleWord(true);
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            setText(value.toString());
+            setSize(table.getColumnModel().getColumn(column).getWidth(), getPreferredSize().height);
+            if (table.getRowHeight(row) != getPreferredSize().height) {
+                table.setRowHeight(row, getPreferredSize().height);
+            }
+            return this;
+        }
+    }
     
     public TableFormatDetail() {
        
@@ -25,13 +45,14 @@ public class TableFormatDetail extends JTable {
     public enum Column {
         
         BOOLEAN(0,10,"",Boolean.class, true),
-        ID(1,20,"id",String.class, false),
-        NAME(2,80,"Nombre",String.class, false),
-        ITEMS(3,80,"Conceptos",String.class, false),
-        ADJUTS(4,40,"Ajustes",String.class, false),
-        IMPORT(5,40,"Importe",String.class, false),
-        PAYMENT(6,40,"Anticipo",String.class, false),
-        TOTAL(7,40,"Total",String.class, false);
+        ID(1,10,"id",String.class, false),
+        NUMBER(2,10,"#",String.class, false),
+        NAME(3,60,"Nombre",String.class, false),
+        ITEMS(4,240,"Conceptos",String.class, false),
+        ADJUTS(5,240,"Ajustes",String.class, false),
+        IMPORT(6,20,"Importe",String.class, false),
+        PAYMENT(7,20,"Anticipo",String.class, false),
+        TOTAL(8,20,"Total",String.class, false);
         
         private final int number;
         private final int size;
@@ -94,7 +115,7 @@ public class TableFormatDetail extends JTable {
         
         TableRowSorter<TableModel> ordenarTabla = new TableRowSorter<TableModel>(this.getModel()); 
         this.setRowSorter(ordenarTabla);
-        
+          
         DefaultTableCellRenderer center = new DefaultTableCellRenderer();
         center.setHorizontalAlignment(SwingConstants.CENTER);
         
@@ -106,7 +127,7 @@ public class TableFormatDetail extends JTable {
                     .getColumn(column.getNumber())
                     .setPreferredWidth(column.getSize());
         }
-        
+                
         this.getColumnModel().getColumn(Column.ID.getNumber()).setMaxWidth(0);
         this.getColumnModel().getColumn(Column.ID.getNumber()).setMinWidth(0);
         this.getColumnModel().getColumn(Column.ID.getNumber()).setPreferredWidth(0);
@@ -114,6 +135,9 @@ public class TableFormatDetail extends JTable {
         this.getColumnModel().getColumn(Column.IMPORT.getNumber()).setCellRenderer(right);
         this.getColumnModel().getColumn(Column.PAYMENT.getNumber()).setCellRenderer(right);
         this.getColumnModel().getColumn(Column.TOTAL.getNumber()).setCellRenderer(right);
+        this.getColumnModel().getColumn(Column.NUMBER.getNumber()).setCellRenderer(center);
+        
+        this.getColumnModel().getColumn(Column.ITEMS.getNumber()).setCellRenderer(new WordWrapCellRenderer());
         
         // adding checkbox in header table
         TableColumn tc = this.getColumnModel().getColumn(Column.BOOLEAN.getNumber());

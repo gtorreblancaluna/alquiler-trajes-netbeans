@@ -28,7 +28,7 @@ public class TableConsultEvents extends JTable {
         ID(1,10,"Folio",String.class, false),
         DESCRIPTION(2,120,"Descripción",String.class, false),
         CUSTOMER(3,60,"Cliente",String.class, false),
-        CUSTOMER_PHONES(4,60,"Telefono cliente",String.class, false),
+        CUSTOMER_PHONES(4,60,"Teléfono cliente",String.class, false),
         DELIVERY_DATE(5,90,"Fecha entrega",String.class, false),
         RETURN_DATE(6,90,"Fecha devolución",String.class, false),
         TYPE_EVENT(7,30,"Tipo",String.class, false),
