@@ -1,7 +1,7 @@
 package alquiler.trajes.constant;
 
 public interface ApplicationConstants {
-    
+       
     public static final String LOCALE_LANGUAGE = "es";
     public static final String LOCALE_COUNTRY = "MX";
     

@@ -15,15 +15,12 @@ import javax.print.PrintServiceLookup;
 import javax.print.SimpleDoc;
 import javax.print.attribute.HashPrintRequestAttributeSet;
 import javax.print.attribute.PrintRequestAttributeSet;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.apache.log4j.Logger;
 
-public abstract class TicketTemplate {
-    
-    private String header;
-    private String footer;
-    private String body;
-    
+public abstract class TicketTemplate {    
+
     private static final Logger log = Logger.getLogger(TicketTemplate.class.getName());
     protected final FastDateFormat dateFormat = FastDateFormat.getInstance(DATE_MEDIUM);
     private final GeneralInfoService generalInfoService;
@@ -31,11 +28,7 @@ public abstract class TicketTemplate {
     protected TicketTemplate () {
         generalInfoService = GeneralInfoService.getInstance();
     }
-    
-    protected void setBody (final String body) {
-        this.body = body;
-    }
-    
+
     protected final String LINE_BREAK = "\n";
     protected final String LINE = "================================";
     protected final String SUB_LINE_POINTS = "................................";
@@ -45,7 +38,8 @@ public abstract class TicketTemplate {
     protected final String STRING_FORMAT_THREE_PARAMETERS = "%s %s %s";
     
     //default implementation
-    private void buildHeader() {
+    private String buildHeader() {
+        
         System.out.println("Building Header");
         StringBuilder headerBuilder = new StringBuilder();
         try {
@@ -60,38 +54,35 @@ public abstract class TicketTemplate {
             
             headerBuilder.append(LINE_BREAK);
             headerBuilder.append(UtilityTicket.center("Agradecemos su preferencia.",LENGHT_BY_LINE));
-            this.header = headerBuilder.toString();
+            
         } catch (BusinessException e) {
-        }        
+        }
+        return headerBuilder.toString();
     }
     
     //default implementation
-    private void buildFooter() {
+    private String buildFooter() {
+        
         System.out.println("Building Footer");
         StringBuilder footerBuilder = new StringBuilder();
         try {
             String infoFooter = generalInfoService.getByKey(GeneralInfoEnum.INFO_FOOTER_PDF_A5.getKey());
-            UtilityTicket.appendLargeStringToStringBuilderByLengthToPrinterTermica(
-                    footerBuilder, 
+            footerBuilder.append(UtilityTicket.justify(
                     LENGHT_BY_LINE, 
                     infoFooter, 
-                    LINE_BREAK,6);
+                    LINE_BREAK,12));
             footerBuilder.append(LINE_BREAK);
         } catch (BusinessException e) {
         }   
         footerBuilder.append("Fecha impresión: ").append(dateFormat.format(new Date()));
-        this.footer = footerBuilder.toString();
+        return footerBuilder.toString();
     }
     
     //method to be implemented by subclass
-    protected abstract void buildBody();
+    protected abstract String buildBody();
     
     //template method, final so subclasses can't override
     public final void generateTicket() throws PrintException{
-            
-            buildHeader();
-            buildFooter();
-            buildBody();
             
             StringBuilder contentTicket = new StringBuilder();
             contentTicket
@@ -99,13 +90,13 @@ public abstract class TicketTemplate {
                     .append(LINE_BREAK)
                     .append(LINE)
                     .append(LINE_BREAK)
-                    .append(header)
+                    .append(StringUtils.stripAccents(buildHeader()))
                     .append(LINE_BREAK)
                     .append(LINE)
                     .append(LINE_BREAK)
-                    .append(body)
+                    .append(StringUtils.stripAccents(buildBody()))
                     .append(LINE).append(LINE_BREAK)
-                    .append(footer)
+                    .append(StringUtils.stripAccents(buildFooter()))
                     .append(LINE_BREAK)
                     .append(LINE_BREAK);
             

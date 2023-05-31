@@ -14,9 +14,9 @@ public class EventTicket extends TicketTemplate {
     private final List<DetailEvent> detailEvent;
     private final Float subtotal;
     private final Float payments;
-    private final int TOTAL_LINES_DESCRIPTION = 6;
+    private final int TOTAL_LINES_DESCRIPTION = 12;
     private final String CUSTOMER_LABEL = "Cliente:";
-    private final String ATTENDED_LABEL = "Atendió:";
+    private final String ATTENDED_LABEL = "Atendio:";
     private final String ANTICIPO_LABEL = "A.C. ";
     private final String HR_LABEL = " Hr";
     private final String SUBTOTAL_LABEL = "Subtotal:";
@@ -35,7 +35,7 @@ public class EventTicket extends TicketTemplate {
     }
 
     @Override
-    protected void buildBody() {
+    protected String buildBody() {
         
         StringBuilder builder = new StringBuilder();
         builder
@@ -63,7 +63,8 @@ public class EventTicket extends TicketTemplate {
             .append(LINE)
             .append(LINE_BREAK);
             
-        final String customerNameWithLabel = String.format(
+        final String customerNameWithLabel = 
+                String.format(
                         STRING_FORMAT_THREE_PARAMETERS,
                         CUSTOMER_LABEL,
                         event.getCustomer().getName(),
@@ -85,7 +86,7 @@ public class EventTicket extends TicketTemplate {
                     .append(event.getDeliveryHour())
                     .append(HR_LABEL)
                     .append(LINE_BREAK)
-            .append("Devolución: ")
+            .append("Devolucion: ")
                     .append(dateFormat.format(event.getReturnDate()))
                     .append(" ")
                     .append(event.getReturnHour())
@@ -106,48 +107,39 @@ public class EventTicket extends TicketTemplate {
                             .append(userNameWithLabel);
                 }
             builder.append(LINE_BREAK);
-            builder.append("Fecha elaboración: ")
+            builder.append("Fecha elaboracion: ")
                     .append(dateFormat.format(event.getCreatedAt()))
                     .append(LINE_BREAK);
 
-            StringBuilder descriptionBuilder = new StringBuilder();
-            UtilityTicket.appendLargeStringToStringBuilderByLengthToPrinterTermica(
-                    descriptionBuilder, 
+
+            String descriptionJustify = UtilityTicket.justify(                     
                     LENGHT_BY_LINE, 
                     event.getDescription(), 
                     LINE_BREAK,
                     TOTAL_LINES_DESCRIPTION
-            );
-            
-            
-            
+            );            
 
-            builder.append("Descripción:")
+            builder.append("Descripcion:")
                     .append(LINE_BREAK)
-                    .append(descriptionBuilder.toString())
-                    .append(LINE).append(LINE_BREAK);
+                    .append(descriptionJustify)
+                    .append(LINE_BREAK)
+                    .append(LINE)
+                    .append(LINE_BREAK);
             
             int lines = 0;
             for (DetailEvent detail : detailEvent) {
-                if (detail.getNameOfAggregate().length() > LENGHT_BY_LINE) {
-                    builder
-                            .append(detail.getNameOfAggregate().substring(0, LENGHT_BY_LINE))
-                            .append(LINE_BREAK);
-                } else {
-                    builder
-                            .append(detail.getNameOfAggregate())
-                            .append(LINE_BREAK);
-                }
                 
-                if (detail.getItems().length() > LENGHT_BY_LINE) {
-                    builder
-                            .append(detail.getItems().substring(0, LENGHT_BY_LINE))
-                            .append(LINE_BREAK);
-                } else {
-                    builder
-                            .append(detail.getItems())
-                            .append(LINE_BREAK);
-                }
+                builder.append(
+                        UtilityTicket.justify(
+                                LENGHT_BY_LINE,
+                                detail.getNameOfAggregate(),
+                                LINE_BREAK, 1));
+                
+                builder.append(
+                        UtilityTicket.justify(
+                                LENGHT_BY_LINE,
+                                detail.getItems(),
+                                LINE_BREAK, 2));
                 builder
                         .append("Imp. ")
                         .append(String.format(STRING_FORMAT_NUMBER,decimalFormat.format(detail.getUnitPrice())))
@@ -169,7 +161,7 @@ public class EventTicket extends TicketTemplate {
                 }
             } // end for
         
-        this.setBody(builder.toString());
+        return builder.toString();
     }
     
 }
