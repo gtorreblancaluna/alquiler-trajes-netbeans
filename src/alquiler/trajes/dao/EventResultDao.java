@@ -78,7 +78,7 @@ public final class EventResultDao extends ResultDao {
                 // entre fecha de entrega
                 builder.append("AND event.delivery_date BETWEEN '")
                         .append(parameter.getInitDeliveryDate()).append("' ")
-                        .append("' AND '")
+                        .append(" AND '")
                         .append(parameter.getEndDeliveryDate()).append("' ")
                         ;
             }
@@ -91,7 +91,7 @@ public final class EventResultDao extends ResultDao {
                // entre fecha de devolucion
                 builder.append("AND event.return_date BETWEEN '")
                         .append(parameter.getInitReturnDate())
-                        .append("' AND '")
+                        .append(" AND '")
                         .append(parameter.getEndReturnDate()).append("' ")
                         ;
 
@@ -111,6 +111,7 @@ public final class EventResultDao extends ResultDao {
         }
 
         builder.append("ORDER BY event.delivery_date ");
+        builder.append("LIMIT ").append(parameter.getLimit());
         
         Query query = em.createNativeQuery(builder.toString());
         List<EventResult> list = getResultList(query, EventResult.class);

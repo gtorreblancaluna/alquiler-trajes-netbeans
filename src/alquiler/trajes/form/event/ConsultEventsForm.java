@@ -82,6 +82,10 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
         Utility.addJtableToPane(719, 451, this.panelTable, tableConsultEvents);        
         search(false);
         addEventListenerToTable();
+        
+        setResizable(true);
+        setIconifiable(true);
+        setMaximizable(true);
     }
     
     private void generateEventsFoliosPDF () {
@@ -227,6 +231,7 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
                         ).customerName(txtCustomerName.getText().trim().toLowerCase())
                         .eventId(!txtFolio.getText().isEmpty() ? Long.parseLong(txtFolio.getText().trim()) : null)
                         .description(txtDescription.getText())
+                        .limit("1000")
                         .build();
     }
         

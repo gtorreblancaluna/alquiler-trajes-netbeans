@@ -16,7 +16,7 @@ public class TableFormatCustomers extends JTable {
     
     public TableFormatCustomers() {
        
-        this.setFont(new Font( ApplicationConstants.ARIAL , Font.PLAIN, 11 ));
+        this.setFont(new Font( ApplicationConstants.ARIAL , Font.PLAIN, 12 ));
         format();
         
     }

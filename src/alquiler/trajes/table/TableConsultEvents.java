@@ -17,7 +17,7 @@ public class TableConsultEvents extends JTable {
     
     public TableConsultEvents() {
        
-        this.setFont(new Font( ApplicationConstants.ARIAL , Font.PLAIN, 11 ));
+        this.setFont(new Font( ApplicationConstants.ARIAL , Font.PLAIN, 12 ));
         format();
     }
     

@@ -37,7 +37,7 @@ public class TableFormatDetail extends JTable {
     
     public TableFormatDetail() {
        
-        this.setFont(new Font( ApplicationConstants.ARIAL , Font.PLAIN, 11 ));
+        this.setFont(new Font( ApplicationConstants.ARIAL , Font.PLAIN, 12 ));
         format();
     }
     

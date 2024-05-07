@@ -18,5 +18,5 @@ public class EventParameter {
     private String customerName;
     private Long eventId;
     private String description;
-    
+    private String limit;
 }
