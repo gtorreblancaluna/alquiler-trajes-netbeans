@@ -49,10 +49,11 @@ public class TableFormatDetail extends JTable {
         NUMBER(2,10,"#",String.class, false),
         NAME(3,60,"Nombre",String.class, false),
         ITEMS(4,240,"Conceptos",String.class, false),
-        ADJUTS(5,240,"Ajustes",String.class, false),
-        IMPORT(6,20,"Importe",String.class, false),
-        PAYMENT(7,20,"Anticipo",String.class, false),
-        TOTAL(8,20,"Total",String.class, false);
+        ADJUTS(5,160,"Ajustes",String.class, false),
+        STATUS(6,160,"Estado",String.class, false),
+        IMPORT(7,20,"Importe",String.class, false),
+        PAYMENT(8,20,"Anticipo",String.class, false),
+        TOTAL(9,20,"Total",String.class, false);
         
         private final int number;
         private final int size;

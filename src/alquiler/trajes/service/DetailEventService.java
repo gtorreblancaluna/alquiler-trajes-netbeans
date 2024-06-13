@@ -32,11 +32,20 @@ public final class DetailEventService {
         detailEventDao.deleteAllByEvent(eventId);
     }
     
+    public void saveOrUpdate (DetailEvent detail) throws BusinessException {
+        if (detail.getEvent() == null) {
+            detailEventDao.save(detail);
+        } else {
+            detailEventDao.update(detail);
+        }
+    }
+    
     public void save (List<DetailEvent> details) throws BusinessException {
 
-        details.stream().forEach(t -> {            
-            detailEventDao.save(t);
-        });
+        for (DetailEvent detail : details) {
+            saveOrUpdate(detail);
+        }
+        
     }
     
     public DetailEvent findById (final Long id)throws BusinessException {

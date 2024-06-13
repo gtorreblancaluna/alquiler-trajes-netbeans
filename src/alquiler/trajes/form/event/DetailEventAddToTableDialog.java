@@ -1,43 +1,60 @@
 package alquiler.trajes.form.event;
 
+import static alquiler.trajes.constant.ApplicationConstants.DECIMAL_FORMAT;
 import static alquiler.trajes.constant.ApplicationConstants.ENTER_KEY;
 import static alquiler.trajes.constant.ApplicationConstants.MESSAGE_TITLE_ERROR;
 import static alquiler.trajes.constant.ApplicationConstants.TITLE_DETAIL_EVENT_DIALOG_FORM;
 import alquiler.trajes.entity.DetailEvent;
 import alquiler.trajes.exceptions.InvalidDataException;
 import alquiler.trajes.util.Utility;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
-import javax.swing.JComponent;
+import java.text.DecimalFormat;
 import javax.swing.JOptionPane;
-import javax.swing.KeyStroke;
-
+import javax.swing.JTextField;
 
 public class DetailEventAddToTableDialog extends javax.swing.JDialog {
     
     private DetailEvent detailToReturn = new DetailEvent();
+    private static final DecimalFormat decimalFormat = new DecimalFormat(DECIMAL_FORMAT);
 
     public DetailEventAddToTableDialog(java.awt.Frame parent, boolean modal, DetailEvent detail) {
         super(parent, modal);
         initComponents();
-        //this.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
-        this.pack();
+        addEventListener();
+        //this.pack();
         this.setLocationRelativeTo(null);
         this.setTitle(TITLE_DETAIL_EVENT_DIALOG_FORM);
         if (detail != null) {
             fillDetailToInputs(detail);
             detailToReturn.setId(detail.getId());
+        } else {
+            detailToReturn = null;
         }
         txtName.requestFocus();
-        addEscapeListener();
-        addEventListener();
+        Utility.addEscapeListener(this);
+        txtTotal.setEnabled(false);
+    }
+    
+    private void totalCalculate () {
+        if (!txtImport.getText().isEmpty() && !txtPayment.getText().isEmpty()) {
+            try {
+                
+                Float importe = Float.parseFloat(txtImport.getText());
+                Float payment = Float.parseFloat(txtPayment.getText());
+                
+                txtTotal.setText(decimalFormat.format(importe-payment));
+                
+            } catch (NumberFormatException numberFormatException) {
+                // nothing to do
+            }
+        }
     }
     
     private void addEventListener () {
-    
+        
         this.addWindowListener(new WindowListener() {
 
                 @Override
@@ -76,20 +93,53 @@ public class DetailEventAddToTableDialog extends javax.swing.JDialog {
                 }
 
             });
-    }
-    
-    // close dialog when esc is pressed.
-    private void addEscapeListener() {
-        ActionListener escListener = (ActionEvent e) -> {
-            detailToReturn = null;
-            setVisible(false);
-            dispose();
-        };
-
-        this.getRootPane().registerKeyboardAction(escListener,
-                KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
-                JComponent.WHEN_IN_FOCUSED_WINDOW);
-
+        
+        txtImport.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e) {
+                JTextField textField = (JTextField) e.getSource();                
+                textField.setText(Utility.onlyNumbersAndPoint(textField.getText()));
+                totalCalculate();
+            }
+        });
+        
+        txtPayment.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e) {
+                JTextField textField = (JTextField) e.getSource();                
+                textField.setText(Utility.onlyNumbersAndPoint(textField.getText()));
+                totalCalculate();
+            }
+        });
+        
+        txtConcepts.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent evt) {
+                if (evt.getKeyCode() == KeyEvent.VK_TAB) {
+                    txtAdjuts.requestFocus();
+                }
+            }
+        });
+        
+        txtAdjuts.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent evt) {
+                if (evt.getKeyCode() == KeyEvent.VK_TAB) {
+                    txtStatus.requestFocus();
+                }
+            }
+        });
+        
+        txtStatus.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent evt) {
+                if (evt.getKeyCode() == KeyEvent.VK_TAB) {
+                    txtImport.requestFocus();
+                }
+            }
+        });
+        
+        
     }
     
     private void fillDetailToInputs (DetailEvent detail) {
@@ -98,20 +148,54 @@ public class DetailEventAddToTableDialog extends javax.swing.JDialog {
         txtAdjuts.setText(detail.getAdjustments());
         txtImport.setText(String.valueOf(detail.getUnitPrice()));
         txtPayment.setText(String.valueOf(detail.getAdvancePayment()));
+        txtStatus.setText(detail.getStatus());
+        totalCalculate();
     }
     
-    private void validateInputs () throws InvalidDataException {
+    private void validateInputs () throws InvalidDataException {        
+
+        if (!txtPayment.getText().isEmpty()) {
+            try {            
+                Float.parseFloat(txtPayment.getText());                
+            } catch (NumberFormatException numberFormatException) {
+                throw new InvalidDataException("Ingresa un número valido para el anticipo.");
+            }
+        }
         
         if (txtName.getText().isEmpty()) {
             throw new InvalidDataException("Nombre es requerido.");
         } else if (txtName.getText().length() > 100000) {
-            throw new InvalidDataException("Limite excedido.");
+            throw new InvalidDataException("Limite excedido para el nombre.");
         }
         if (txtImport.getText().isEmpty()) {
             throw new InvalidDataException("Importe es requerido.");
         } else if (txtImport.getText().length() > 100000) {
-            throw new InvalidDataException("Limite excedido.");
+            throw new InvalidDataException("Limite excedido para importe.");
         }
+        
+        try {                
+            Float.parseFloat(txtImport.getText());                         
+        } catch (NumberFormatException numberFormatException) {
+            throw new InvalidDataException("Ingresa un número valido para importe.");
+        }
+        
+        
+        
+        if (!txtImport.getText().isEmpty() && !txtPayment.getText().isEmpty()) {
+            try {
+                
+                Float importe = Float.parseFloat(txtImport.getText());
+                Float payment = Float.parseFloat(txtPayment.getText());
+                
+                if ( (importe - payment) < 0 ) {
+                    throw new InvalidDataException("Total debe de ser mayor a cero.");
+                }
+                
+            } catch (NumberFormatException numberFormatException) {
+                throw new InvalidDataException("Ingresa un número valido.");
+            }
+        }
+        
     }
     
     private void buildDetailFromInputs () throws InvalidDataException{
@@ -128,6 +212,7 @@ public class DetailEventAddToTableDialog extends javax.swing.JDialog {
                                 !txtPayment.getText().isEmpty() ?
                                 Float.parseFloat(Utility.deleteCharacters(txtPayment.getText(),",")) :
                                         0F)
+                        .status(txtStatus.getText().trim())
                         .build();
     }
     
@@ -154,12 +239,17 @@ public class DetailEventAddToTableDialog extends javax.swing.JDialog {
         jLabel5 = new javax.swing.JLabel();
         btnOK = new javax.swing.JButton();
         btnCancel = new javax.swing.JButton();
-        txtImport = new javax.swing.JFormattedTextField();
-        txtPayment = new javax.swing.JFormattedTextField();
         jScrollPane1 = new javax.swing.JScrollPane();
         txtConcepts = new javax.swing.JTextPane();
         jScrollPane2 = new javax.swing.JScrollPane();
         txtAdjuts = new javax.swing.JTextPane();
+        txtImport = new javax.swing.JTextField();
+        txtPayment = new javax.swing.JTextField();
+        txtTotal = new javax.swing.JTextField();
+        jLabel6 = new javax.swing.JLabel();
+        jScrollPane3 = new javax.swing.JScrollPane();
+        txtStatus = new javax.swing.JTextPane();
+        jLabel7 = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
 
@@ -193,23 +283,31 @@ public class DetailEventAddToTableDialog extends javax.swing.JDialog {
             }
         });
 
-        txtImport.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.NumberFormatter()));
+        jScrollPane1.setViewportView(txtConcepts);
+
+        jScrollPane2.setViewportView(txtAdjuts);
+
+        txtImport.setHorizontalAlignment(javax.swing.JTextField.RIGHT);
         txtImport.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyPressed(java.awt.event.KeyEvent evt) {
                 txtImportKeyPressed(evt);
             }
         });
 
-        txtPayment.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.NumberFormatter()));
+        txtPayment.setHorizontalAlignment(javax.swing.JTextField.RIGHT);
         txtPayment.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyPressed(java.awt.event.KeyEvent evt) {
                 txtPaymentKeyPressed(evt);
             }
         });
 
-        jScrollPane1.setViewportView(txtConcepts);
+        txtTotal.setHorizontalAlignment(javax.swing.JTextField.RIGHT);
 
-        jScrollPane2.setViewportView(txtAdjuts);
+        jLabel6.setText("Total:");
+
+        jScrollPane3.setViewportView(txtStatus);
+
+        jLabel7.setText("Estado:");
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -218,12 +316,10 @@ public class DetailEventAddToTableDialog extends javax.swing.JDialog {
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(txtImport, javax.swing.GroupLayout.PREFERRED_SIZE, 204, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(txtPayment))
                     .addComponent(txtName)
                     .addComponent(jScrollPane1)
+                    .addComponent(jScrollPane2)
+                    .addComponent(jScrollPane3)
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(jPanel1Layout.createSequentialGroup()
@@ -233,13 +329,21 @@ public class DetailEventAddToTableDialog extends javax.swing.JDialog {
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                                 .addComponent(btnCancel))
                             .addComponent(jLabel2)
+                            .addComponent(jLabel3)
                             .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addComponent(jLabel4)
-                                .addGap(166, 166, 166)
-                                .addComponent(jLabel5))
-                            .addComponent(jLabel3))
-                        .addGap(0, 0, Short.MAX_VALUE))
-                    .addComponent(jScrollPane2))
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(txtImport, javax.swing.GroupLayout.PREFERRED_SIZE, 61, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(jLabel4))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(txtPayment, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(jLabel5))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(jLabel6)
+                                    .addComponent(txtTotal, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                            .addComponent(jLabel7))
+                        .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         jPanel1Layout.setVerticalGroup(
@@ -252,20 +356,26 @@ public class DetailEventAddToTableDialog extends javax.swing.JDialog {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jLabel2)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 82, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 58, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jLabel3)
-                .addGap(5, 5, 5)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 86, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(5, 5, 5)
+                .addComponent(jLabel7)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel4)
-                    .addComponent(jLabel5))
+                    .addComponent(jLabel5)
+                    .addComponent(jLabel6))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(txtImport, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(txtPayment, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(txtPayment, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(txtTotal, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 20, Short.MAX_VALUE)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(btnOK)
                     .addComponent(btnCancel))
@@ -382,13 +492,18 @@ public class DetailEventAddToTableDialog extends javax.swing.JDialog {
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JLabel jLabel7;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JTextPane txtAdjuts;
     private javax.swing.JTextPane txtConcepts;
-    private javax.swing.JFormattedTextField txtImport;
+    private javax.swing.JTextField txtImport;
     private javax.swing.JTextField txtName;
-    private javax.swing.JFormattedTextField txtPayment;
+    private javax.swing.JTextField txtPayment;
+    private javax.swing.JTextPane txtStatus;
+    private javax.swing.JTextField txtTotal;
     // End of variables declaration//GEN-END:variables
 }

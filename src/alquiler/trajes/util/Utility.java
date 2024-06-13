@@ -4,32 +4,103 @@ import alquiler.trajes.constant.ApplicationConstants;
 import static alquiler.trajes.constant.ApplicationConstants.MESSAGE_TITLE_DETELE_RECORD_CONFIRM;
 import static alquiler.trajes.constant.ApplicationConstants.SELECT_A_ROW_NECCESSARY;
 import alquiler.trajes.constant.RoleEnum;
+import alquiler.trajes.entity.Customer;
 import alquiler.trajes.entity.Role;
 import alquiler.trajes.exceptions.BusinessException;
 import alquiler.trajes.exceptions.UnAuthorizedException;
+import alquiler.trajes.form.MainForm;
 import alquiler.trajes.form.login.LoginForm;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.text.Normalizer;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import javax.swing.JComponent;
+import javax.swing.JInternalFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.KeyStroke;
 import javax.swing.table.DefaultTableModel;
 
 
 
 public abstract class Utility {
+    
     private static final int POSITION_HOUR = 0;
     private static final int POSITION_MINUTE = 1;
     private static final String ZERO_ID_FOR_NEW_ELEMENT = "0";
     
+    private Utility () {}
+    
+    public static void openInternalForm (JInternalFrame jInternalFrame)  {
+        jInternalFrame.setLocation(
+                MainForm.jDesktopPane1.getWidth() / 2 - jInternalFrame.getWidth() / 2, 
+                MainForm.jDesktopPane1.getHeight() / 2 - jInternalFrame.getHeight() / 2 - 20);
+        MainForm.jDesktopPane1.add(jInternalFrame);
+        jInternalFrame.show();
+    }
+    
+    public static String getCustomerTels (final Customer customer) {
+        List<String> customerTels = new ArrayList<>();
+        String telsCustomer = "";
+            
+        if (customer.getPhoneNumber1() != null && !customer.getPhoneNumber1().isEmpty()) {
+            customerTels.add(customer.getPhoneNumber1());
+        }
+        if (customer.getPhoneNumber2() != null && !customer.getPhoneNumber2().isEmpty()) {
+            customerTels.add(customer.getPhoneNumber2());
+        }
+        if (customer.getPhoneNumber3() != null && !customer.getPhoneNumber3().isEmpty()) {
+            customerTels.add(customer.getPhoneNumber3());
+        }
+        if (!customerTels.isEmpty()){
+            telsCustomer = String.join(",", customerTels);
+        }
+        
+        return telsCustomer;
+    }
+    
+    public static String onlyNumbersAndPoint (String text) {
+        return text.replaceAll("[^0-9.]", "");
+    }
+    public static String onlyNumbers (String text) {
+        return text.replaceAll("[^0-9]", "");
+    }
+    
+    // close dialog when esc is pressed.
+    public static void addEscapeListener(final javax.swing.JDialog jDialog) {
+        ActionListener escListener = (ActionEvent e) -> {
+            jDialog.setVisible(false);
+        };
+
+        jDialog.getRootPane().registerKeyboardAction(escListener,
+            KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
+            JComponent.WHEN_IN_FOCUSED_WINDOW);
+
+    }
+    
+    // close dialog when esc is pressed.
+    public static void addEscapeListener(final javax.swing.JInternalFrame jInternalFrame) {
+        ActionListener escListener = (ActionEvent e) -> {
+            jInternalFrame.setVisible(false);
+        };
+
+        jInternalFrame.getRootPane().registerKeyboardAction(escListener,
+            KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
+            JComponent.WHEN_IN_FOCUSED_WINDOW);
+
+    }    
 
     
     public static void cloneRowsCheckedTable (JTable table,
@@ -130,6 +201,16 @@ public abstract class Utility {
        for (int i = 0 ; i < table.getRowCount() ; i++) {
             table.setValueAt(checked, i, column);
        }
+    }
+    
+    public static LocalDate convertToLocalDateViaInstant(Date dateToConvert) {
+        return dateToConvert.toInstant()
+          .atZone(ZoneId.systemDefault())
+          .toLocalDate();
+    }
+    
+    public static Date localDateToDate(LocalDate localDate) {
+        return Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
     }
     
     public static Date setHourAndMinutesFromDate (String[] hourAndMinute, Date date) {

@@ -20,3 +20,4 @@ INSERT INTO general_info (key_v,value_v) VALUES ("COMPANY_NAME","Porte Formal");
 INSERT INTO general_info (key_v,value_v) VALUES ("COMPANY_PHONES","7777");
 INSERT INTO general_info (key_v,value_v) VALUES ("COMPANY_ADDRESS","Cuauhtemoc 62. Chilpancingo, Gro.");
 INSERT INTO general_info (key_v,value_v) VALUES ("INFO_FOOTER_PDF_A5","Es necesario traer tu INE original y comprobante de domicilio original Tels. 7474985486,7471067891(solo whatsapp). Horario Lunes a Sabado 10:30 a 19:30. Conserve esta nota para cualquier aclaración. Se cobrará $50.00 por cada dia sin devolver a partir del dia indicado como 'Fecha de devolución'.");
+INSERT INTO general_info (key_v,value_v) VALUES ("IMPORTANT_INFO","IMPORTANTE TRAER INE ORIGINAL Y COMPROBANTE DE DOMICILIO ORIGINAL (NO MAYOR A 3 MESES)");

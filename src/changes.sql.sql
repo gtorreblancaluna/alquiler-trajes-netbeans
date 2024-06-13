@@ -1,0 +1,1 @@
+ALTER TABLE detail_event ADD COLUMN status VARCHAR(755) NULL;

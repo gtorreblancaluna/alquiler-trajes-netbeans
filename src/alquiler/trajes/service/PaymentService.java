@@ -34,6 +34,10 @@ public final class PaymentService {
         
         final Date now = new Date();
         
+        if (payment.getEnabled() == null) {
+            payment.setEnabled(Boolean.TRUE);
+        }
+        
         if (payment.getId() == null || payment.getId().equals(0L)) {
             payment.setId(null);
             payment.setCreatedAt(now);

@@ -39,6 +39,8 @@ public class DetailEvent {
     
     @Column(length = 755)
     private String adjustments;
+
+    private String status;
     
     @Column(name="unit_price")
     private Float unitPrice;

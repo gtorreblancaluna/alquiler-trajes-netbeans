@@ -92,6 +92,7 @@ CREATE TABLE detail_event (
   unit_price FLOAT DEFAULT NULL,
   -- anticipo
   advance_payment FLOAT DEFAULT NULL,
+  status VARCHAR(755) NULL,
   PRIMARY KEY (id),
   CONSTRAINT fk_detail_event_event_id
     FOREIGN KEY (event_id) 

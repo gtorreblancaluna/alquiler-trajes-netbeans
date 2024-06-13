@@ -2,18 +2,13 @@ package alquiler.trajes.form.event;
 
 import alquiler.trajes.constant.ApplicationConstants;
 import static alquiler.trajes.constant.ApplicationConstants.DATE_LARGE;
-import static alquiler.trajes.constant.ApplicationConstants.DATE_MEDIUM;
 import static alquiler.trajes.constant.ApplicationConstants.DECIMAL_FORMAT;
 import static alquiler.trajes.constant.ApplicationConstants.DELETE_CHARS_NUMBER;
-import static alquiler.trajes.constant.ApplicationConstants.DESCRIPTION_FORMAT_24_HRS;
 import static alquiler.trajes.constant.ApplicationConstants.EMPTY_STRING_TXT_FIELD;
 import static alquiler.trajes.constant.ApplicationConstants.ENTER_KEY;
 import static alquiler.trajes.constant.ApplicationConstants.LOCALE_COUNTRY;
 import static alquiler.trajes.constant.ApplicationConstants.LOCALE_LANGUAGE;
 import static alquiler.trajes.constant.ApplicationConstants.MESSAGE_TITLE_ERROR;
-import static alquiler.trajes.constant.ApplicationConstants.PATH_NAME_EVENT_REPORT_VERTICAL_A5;
-import static alquiler.trajes.constant.ApplicationConstants.PDF_NAME_EVENT_REPORT_VERTICAL_A5;
-import alquiler.trajes.constant.GeneralInfoEnum;
 import alquiler.trajes.entity.CatalogStatusEvent;
 import alquiler.trajes.entity.CatalogTypeEvent;
 import alquiler.trajes.entity.Customer;
@@ -30,8 +25,6 @@ import alquiler.trajes.service.CatalogTypeEventService;
 import alquiler.trajes.service.CustomerService;
 import alquiler.trajes.service.DetailEventService;
 import alquiler.trajes.service.EventService;
-import alquiler.trajes.service.GeneralInfoService;
-import alquiler.trajes.service.PaymentService;
 import alquiler.trajes.table.TableFormatDetail;
 import alquiler.trajes.table.TableFormatCustomers;
 import alquiler.trajes.table.TableFormatPayments;
@@ -41,77 +34,79 @@ import alquiler.trajes.util.JasperPrintUtil;
 import alquiler.trajes.util.Utility;
 import static alquiler.trajes.util.Utility.onlyAdminUserAccess;
 import java.awt.Frame;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.beans.PropertyChangeEvent;
 import java.text.DecimalFormat;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.print.PrintException;
 import javax.swing.JOptionPane;
 import javax.swing.JTable;
+import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
 import org.apache.commons.lang3.time.FastDateFormat;
 
 
-public class EventForm extends javax.swing.JInternalFrame {
+public abstract class EventForm extends javax.swing.JInternalFrame {
 
-    private Long eventId;
-    private Event event;
-    private List<Payment> paymentsEvent;
-    private List<DetailEvent> detailEvent;
-    private final static int INDEX_CUSTOMER_PANE = 0;
-    private final static int INDEX_EVENT_PANE = 1;
+    
+    protected Event event;
+    protected List<Payment> paymentsEvent;
+    protected List<DetailEvent> detailEvent;
+    protected final static int INDEX_CUSTOMER_PANE = 0;
+    protected final static int INDEX_EVENT_PANE = 1;
     private final CustomerService customerService;
     private final TableFormatCustomers customersTableFormat;
-    private final TableFormatDetail tableFormatDetail;
-    private final TableFormatPayments tableFormatPayments;
+    protected final TableFormatDetail tableFormatDetail;
+    protected final TableFormatPayments tableFormatPayments;
     private List<Customer> customers;
-    private static final org.apache.log4j.Logger log = org.apache.log4j.Logger.getLogger(EventForm.class.getName());
+    protected static final org.apache.log4j.Logger log = org.apache.log4j.Logger.getLogger(EventForm.class.getName());
     private static final String DATE_VALUE_CHOOSER = "date";
     private final CatalogTypeEventService catalogTypeEventService;
     private final CatalogStatusEventService catalogStatusEventService;
-    private final EventService eventService;
-    private final PaymentService paymentService;
+    protected final EventService eventService;
+    
     private final JasperPrintUtil jasperPrintUtil;
-    private final GeneralInfoService generalInfoService;
-    private final DetailEventService detailEventService;
+    protected final DetailEventService detailEventService;
     private List<CatalogTypeEvent> types = new ArrayList<>();
     private List<CatalogStatusEvent> status = new ArrayList<>();
     private static final DecimalFormat decimalFormat = new DecimalFormat(DECIMAL_FORMAT);
     private final FastDateFormat fastDateFormatMedium;
-    private final FastDateFormat fastDateFormatLarge;
+    protected final FastDateFormat fastDateFormatLarge;
     private String referenceRowToEditPaymentTable = null;
-    private final Locale locale;
-
     private static final String REGEX_SPLIT_HOUR = ":";
+    private final Locale locale;
     
     
-    public EventForm(Long eventId) {
+    EventForm() {
+        
         initComponents();
-        this.setTitle(ApplicationConstants.TITLE_EVENTS_FORM);
-        this.eventId = eventId;
+        
+        checkAutoCalculateReturnDate.setSelected(true);
+        locale = new Locale(LOCALE_LANGUAGE, LOCALE_COUNTRY);
+        fastDateFormatMedium = FastDateFormat.getInstance(ApplicationConstants.DATE_MEDIUM,locale);
+        fastDateFormatLarge = FastDateFormat.getInstance(DATE_LARGE,locale);
+        
         this.customerService = CustomerService.getInstance();
         catalogTypeEventService = CatalogTypeEventService.getInstance();
         catalogStatusEventService = CatalogStatusEventService.getInstance();
-        generalInfoService = GeneralInfoService.getInstance();
         jasperPrintUtil = JasperPrintUtil.getInstance();
-        paymentService = PaymentService.getInstance();
+        
         detailEventService = DetailEventService.getInstance();
         eventService = EventService.getInstance();
         customersTableFormat = new TableFormatCustomers();
         tableFormatDetail = new TableFormatDetail();
         tableFormatPayments = new TableFormatPayments();
-        locale = new Locale(LOCALE_LANGUAGE, LOCALE_COUNTRY);
-        fastDateFormatMedium = FastDateFormat.getInstance(DATE_MEDIUM,locale);
-        fastDateFormatLarge = FastDateFormat.getInstance(DATE_LARGE,locale);
         Utility.addJtableToPane(719, 451, this.panelInnerPaymetsTable, tableFormatPayments);
         Utility.addJtableToPane(719, 451, paneCustomersTable, customersTableFormat);
         Utility.addJtableToPane(719, 451, this.panelInnerTableAgregados, tableFormatDetail);
@@ -119,22 +114,39 @@ public class EventForm extends javax.swing.JInternalFrame {
         new Thread(() -> {
             getCustomers();
         }).start();
-        btnEventAdd.setEnabled(false);
-        if (this.eventId != null) {
-            initFormWithExistentEvent();
-        } else {
-            initFormWithNewEvent();
-        }
         this.setClosable(true);
         addMouseListenerToTableCustomers();      
         addActionListenerToDateChoosers();
         addMouseListenerToTableDetail();
         addMouseListenerToTablePayments();
         
+        jTabbedPane1.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+              
+               if (jTabbedPane1.getSelectedIndex() == 1) {
+                   Utility.setTimeout(() -> {
+                       txtPaymentImport.requestFocus();
+                       txtPaymentImport.selectAll();
+                   }, 900);
+                   
+               } 
+               
+            }
+          });
+        
+        txtPaymentImport.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e) {
+                JTextField textField = (JTextField) e.getSource();                
+                textField.setText(Utility.onlyNumbersAndPoint(textField.getText()));
+            }
+        });
+        
         setResizable(true);
         setIconifiable(true);
-        setMaximizable(true);
-        
+        setMaximizable(true);      
+
 
     }
     private void generateTicket () {
@@ -185,43 +197,10 @@ public class EventForm extends javax.swing.JInternalFrame {
                    ApplicationConstants.MESSAGE_MISSING_PARAMETERS,
                    JOptionPane.ERROR_MESSAGE);
             return;
-        }
-        try {
-            Map parameters = new HashMap<>();
-            
-            float sumPayment = 0f;
-            float sumDetail = 0f;
-            
-            for (DetailEvent det : this.detailEvent) {
-                if (det.getUnitPrice() != null){
-                    sumDetail += det.getUnitPrice();
-                }
-            }
-            
-            for (Payment payment : this.paymentsEvent) {
-                if (payment.getPayment() != null) {
-                    sumPayment += payment.getPayment();
-                }
-            }
-            
-            String total = decimalFormat.format(sumDetail-sumPayment);
-            
-            parameters.put("ID", event.getId().toString());
-            parameters.put("FOLIO", event.getId().toString());
-            parameters.put("USER_NAME", event.getUser().getName()+" "+event.getUser().getLastName());
-            parameters.put("CUSTOMER_NAME", event.getCustomer().getName()+" "+event.getCustomer().getLastName());
-            parameters.put("TYPE_EVENT", event.getCatalogTypeEvent().getName());
-            parameters.put("STATUS_EVENT", event.getCatalogStatusEvent().getName());
-            parameters.put("DELIVERY_DATE", fastDateFormatLarge.format(event.getDeliveryDate())+" "+event.getDeliveryHour()+DESCRIPTION_FORMAT_24_HRS);
-            parameters.put("RETURN_DATE", fastDateFormatLarge.format(event.getReturnDate())+" "+event.getReturnHour()+DESCRIPTION_FORMAT_24_HRS);
-            parameters.put("CREATED_AT_DATE", fastDateFormatLarge.format(event.getCreatedAt()));
-            parameters.put("DESCRIPTION", event.getDescription());
-            parameters.put("PAYMENTS", decimalFormat.format(sumPayment));
-            parameters.put("SUBTOTAL", decimalFormat.format(sumDetail));
-            parameters.put("TOTAL", total);
-            parameters.put("COMPANY_NAME", generalInfoService.getByKey(GeneralInfoEnum.COMPANY_NAME.getKey()));
-            parameters.put("INFO_FOOTER_PDF_A5", generalInfoService.getByKey(GeneralInfoEnum.INFO_FOOTER_PDF_A5.getKey()));
-            jasperPrintUtil.showPDF(parameters, PATH_NAME_EVENT_REPORT_VERTICAL_A5, PDF_NAME_EVENT_REPORT_VERTICAL_A5);
+        } 
+
+        try { 
+            jasperPrintUtil.printEventPDF(this.event);
         } catch (BusinessException e) {
             log.error(e);
            JOptionPane.showMessageDialog(
@@ -271,13 +250,13 @@ public class EventForm extends javax.swing.JInternalFrame {
         event.setDescription(txtAreaDescription.getText().trim());
     }
     
-    private void getDetailEventFromTable () throws InvalidDataException {
+    private List<DetailEvent> getDetailEventFromTable () throws InvalidDataException {
         if (tableFormatDetail.getRowCount() < 0) {
             throw new InvalidDataException("Agrega al menos un detalle al evento.");
         }
-        detailEvent = new ArrayList<>();
+        List<DetailEvent> detailEventReturn = new ArrayList<>();
         for (int i = 0; i < tableFormatDetail.getRowCount(); i++) {
-            detailEvent.add(
+            detailEventReturn.add(
                     DetailEvent.builder()
                             .nameOfAggregate(
                                     String.valueOf(tableFormatDetail.getValueAt(i, TableFormatDetail.Column.NAME.getNumber()))
@@ -294,13 +273,18 @@ public class EventForm extends javax.swing.JInternalFrame {
                                     Float.parseFloat(
                                             Utility.deleteCharacters(
                                                 String.valueOf(tableFormatDetail.getValueAt(i, TableFormatDetail.Column.PAYMENT.getNumber())),DELETE_CHARS_NUMBER))
-                            )
+                            ).status(String.valueOf(tableFormatDetail.getValueAt(i, TableFormatDetail.Column.STATUS.getNumber())))
                             .build()
             );
         }
+        
+        return detailEventReturn;
     }
     
-    private void getPaymentsFromTable() {
+    private List<Payment> getPaymentsFromTable() {
+        
+        List<Payment> payments = new ArrayList<>();
+        
         for (int i = 0; i < this.tableFormatPayments.getRowCount(); i++) {
             Long id = 
                 Long.parseLong(
@@ -312,40 +296,22 @@ public class EventForm extends javax.swing.JInternalFrame {
             final String comment =
                     String.valueOf(tableFormatPayments.getValueAt(i, TableFormatPayments.Column.CONCEPT.getNumber()));
             
-            if (id.equals(0L)) {
-                paymentsEvent.add(
-                        Payment.builder()
-                                .id(0L)
-                                .comment(comment)
-                                .payment(payment)
-                                .user(LoginForm.userSession)
-                                .createdAt(new Date())
-                                .build()
-                );
-            } else {
-                paymentsEvent.stream()
-                    .filter(t -> t.getId().equals(id))
-                    .peek(t -> t.setPayment(payment))
-                    .peek(t -> t.setComment(comment))
-                    .findFirst();
-            }
+
+            payments.add(
+                    Payment.builder()
+                            .id(id)
+                            .comment(comment)
+                            .payment(payment)
+                            .user(LoginForm.userSession)
+                            .createdAt(new Date())
+                            .build()
+            );            
+            
         }
+        return payments;
     }
     
-    private void fillTablePayments (List<Payment> list) {
-        this.tableFormatPayments.format();
-        for (Payment payment : list) {
-            DefaultTableModel temp = (DefaultTableModel) tableFormatPayments.getModel();
-            Object row[] = {
-                payment.getId(),
-                payment.getPayment(),
-                payment.getComment(),
-                fastDateFormatLarge.format(payment.getCreatedAt()),
-                payment.getUser().getName()+ " "+ payment.getUser().getLastName()
-            };
-            temp.addRow(row);
-        }
-    }
+
     
     
     private void enableForm () {
@@ -368,10 +334,13 @@ public class EventForm extends javax.swing.JInternalFrame {
       btnPaymentsEdit.setEnabled(true);
       btnEdit.setEnabled(false);
       btnSave.setEnabled(true);
+      btnSaveAndExit.setEnabled(true);
+      btnSaveAndGeneratePDF.setEnabled(true);
       btnCopyDetailRow.setEnabled(true);
+      btnCloneEvent.setEnabled(true);
     }
     
-    private void disableForm () {
+    protected void disableForm () {
       this.dateChooserDeliveryDate.setEnabled(false);
       this.dateChooserReturnDate.setEnabled(false);
       this.cmbCatalogType.setEnabled(false);
@@ -392,24 +361,26 @@ public class EventForm extends javax.swing.JInternalFrame {
       btnEdit.setVisible(true);
       btnEdit.setEnabled(true);
       btnSave.setEnabled(false);
+      btnSaveAndExit.setEnabled(false);
+      btnSaveAndGeneratePDF.setEnabled(false);
       btnCopyDetailRow.setEnabled(false);
+      btnCloneEvent.setEnabled(false);
     }
     
-    private void save () {
-        try {
-            getEventDateFromInputs();
-            getEventFromInputs();
-            getDetailEventFromTable();
-            getPaymentsFromTable();
-            eventService.save(event,detailEvent,paymentsEvent);        
-            this.eventId = this.event.getId();
-            initFormWithExistentEvent();
-        } catch (BusinessException e) {
-            JOptionPane.showMessageDialog(this, e.getMessage(), MESSAGE_TITLE_ERROR, JOptionPane.ERROR_MESSAGE);  
-        }
+    private void save () throws BusinessException {
+
+        getEventDateFromInputs();
+        getEventFromInputs();
+        List<DetailEvent> detail = getDetailEventFromTable();
+        List<Payment> payments = getPaymentsFromTable();
+        eventService.save(event,detail,payments);
+        lblFolio.setText(String.valueOf(event.getId()));
+        disableForm();
+        btnCloneEvent.setEnabled(true);
+
     }
     
-    private void total () {
+    protected void total () {
         float detailTotal=0;
         float paymentsTotal=0;
         int countDetail = 0 ;
@@ -434,7 +405,7 @@ public class EventForm extends javax.swing.JInternalFrame {
         jTabbedPane1.setTitleAt(1, "Abonos("+countPayments+")");
     }
     
-    private void fillCatalogTypeEventService () {
+    protected void fillCatalogTypeEventService () {
         if (types.isEmpty()) {
             try {
                 types = catalogTypeEventService.getAll();
@@ -462,98 +433,24 @@ public class EventForm extends javax.swing.JInternalFrame {
         
     }
     
-    private void initFormWithExistentEvent () {
-        
-        fillCatalogTypeEventService();
-        lblInfoUser.setText("Atendió:");
-        try {
-            this.event = eventService.findById(this.eventId);
-            lblCustomer.setText(this.event.getCustomer().getName()+" "+this.event.getCustomer().getLastName());
-            lblUser.setText(this.event.getUser().getName()+" "+this.event.getUser().getLastName());
-            lblEventCreatedAt.setText("Fecha de elaboración: "+fastDateFormatLarge.format(this.event.getCreatedAt()));
-            tabPaneMain.setSelectedIndex(INDEX_EVENT_PANE);
-            disableForm();
-            btnEventAdd.setEnabled(true);
-            lblFolio.setText(String.valueOf(event.getId()));
 
-            fillInputsFormFromEvent();
-            cmbCatalogType.setSelectedItem(this.event.getCatalogTypeEvent());
-            cmbStatus.setSelectedItem(this.event.getCatalogStatusEvent());
-            
-            new Thread(() -> {
-                fillTablePaymentsFromEventId();
-                fillTableDetailFromEvent();
-                total();
-            }).start();
-            
-        } catch (BusinessException e) {
-           log.error(e);
-           JOptionPane.showMessageDialog(this, e.getMessage(), ApplicationConstants.MESSAGE_UNEXPECTED_ERROR, JOptionPane.ERROR_MESSAGE);
-        }
-    }
-    
-    // is called when event exist to edit.
-    private void fillInputsFormFromEvent () {
-        
-        dateChooserDeliveryDate.setDate(this.event.getDeliveryDate());
-        txtDeliveryHour.setText(this.event.getDeliveryHour());
-
-        if (this.event.getReturnDate() != null) {
-            dateChooserReturnDate.setDate(this.event.getReturnDate());
-            txtReturnHour.setText(this.event.getReturnHour());
-        } else {
-            dateChooserReturnDate.setDate(null);
-            txtReturnHour.setText(EMPTY_STRING_TXT_FIELD);
-        }
-        this.txtAreaDescription.setText(this.event.getDescription());
-        
-    }
-    
-    private void fillTableDetailFromEvent () {
-        try {
-            this.detailEvent = detailEventService.getAll(this.event.getId());
-            this.tableFormatDetail.format();
-            for (DetailEvent detail : this.detailEvent) {
-                addDetailToTable(detail,null);
-            }
-        } catch (BusinessException e) {
-            log.error(e);
-            JOptionPane.showMessageDialog(this, e.getMessage(), MESSAGE_TITLE_ERROR, JOptionPane.ERROR_MESSAGE); 
-        }
-    }
-    
-    private void fillTablePaymentsFromEventId () {
-        this.paymentsEvent = new ArrayList<>();
-        try {
-            this.paymentsEvent = paymentService.getAll(this.event.getId());
-            fillTablePayments(this.paymentsEvent);
-        } catch (BusinessException e) {
-            log.error(e);
-            JOptionPane.showMessageDialog(this, e.getMessage(), MESSAGE_TITLE_ERROR, JOptionPane.ERROR_MESSAGE); 
-        }
-        
-        
-    }
-    
-    private void initFormWithNewEvent () {
-        lblInfoUser.setText("Atiende:");
-        lblEventCreatedAt.setText(EMPTY_STRING_TXT_FIELD);
-        lblSubTotal.setText(EMPTY_STRING_TXT_FIELD);
-        lblPayments.setText(EMPTY_STRING_TXT_FIELD);
-        lblTotal.setText(EMPTY_STRING_TXT_FIELD);
-        btnEdit.setVisible(false);
-        event = new Event();
-        tabPaneMain.setEnabledAt(INDEX_EVENT_PANE, false);
-        tabPaneMain.setSelectedIndex(INDEX_CUSTOMER_PANE);
-        Utility.setTimeout(() -> this.txtName.requestFocus(), 500);
-        lblUser.setText(LoginForm.userSession.getName() + " " + LoginForm.userSession.getLastName());
-        paymentsEvent = new ArrayList<>();
-        this.dateChooserDeliveryDate.setDate(new Date());
-    }
     
     private void addActionListenerToDateChoosers () {
         dateChooserDeliveryDate.getDateEditor().addPropertyChangeListener((PropertyChangeEvent e) -> {
             if (DATE_VALUE_CHOOSER.equals(e.getPropertyName())) {
+                
+                Date deliveryDate = dateChooserDeliveryDate.getDate();                
+                
+                if (checkAutoCalculateReturnDate.isSelected() && deliveryDate != null) {
+                    LocalDate deliveryLocalDate = Utility.convertToLocalDateViaInstant(deliveryDate);
+                    long plusDays = 1;
+                    if (deliveryLocalDate.getDayOfWeek().equals( DayOfWeek.FRIDAY )) {
+                        plusDays = 3;
+                    }
+                    dateChooserReturnDate.setDate(Utility.localDateToDate(deliveryLocalDate.plusDays(plusDays)));
+                    
+                }
+                
                 txtDeliveryHour.requestFocus();
             }
         });
@@ -601,7 +498,8 @@ public class EventForm extends javax.swing.JInternalFrame {
                     tabPaneMain.setEnabledAt(INDEX_EVENT_PANE, true);
                     tabPaneMain.setSelectedIndex(INDEX_EVENT_PANE);
                     cleanCustomerInputs();
-                    lblCustomer.setText(opCustomer.get().getName() + " " + opCustomer.get().getLastName());
+                    String subrayarLabelCustomer = "<html><u>"+opCustomer.get().getName()+" "+opCustomer.get().getLastName()+"</u></html>";            
+                    lblCustomer.setText(subrayarLabelCustomer);
                     new Thread(() -> {
                         fillCatalogTypeEventService();
                     }).start();
@@ -639,7 +537,8 @@ public class EventForm extends javax.swing.JInternalFrame {
             event.setCustomer(customerFromInputs);
             tabPaneMain.setEnabledAt(INDEX_EVENT_PANE, true);
             tabPaneMain.setSelectedIndex(INDEX_EVENT_PANE);
-            lblCustomer.setText(customerFromInputs.getName()+" "+customerFromInputs.getLastName());
+            String subrayarLabelCustomer = "<html><u>"+customerFromInputs.getName()+" "+customerFromInputs.getLastName()+"</u></html>"; 
+            lblCustomer.setText(subrayarLabelCustomer);
             btnSave.setEnabled(true);
             cleanCustomerInputs();
         } catch (BusinessException e) {
@@ -749,7 +648,7 @@ public class EventForm extends javax.swing.JInternalFrame {
         jLabel19 = new javax.swing.JLabel();
         jLabel20 = new javax.swing.JLabel();
         txtPaymentsConcept = new javax.swing.JTextField();
-        txtPaymentImport = new javax.swing.JFormattedTextField();
+        txtPaymentImport = new javax.swing.JTextField();
         panelInnerPaymetsTable = new javax.swing.JPanel();
         jPanel3 = new javax.swing.JPanel();
         jLabel3 = new javax.swing.JLabel();
@@ -766,14 +665,18 @@ public class EventForm extends javax.swing.JInternalFrame {
         jPanel4 = new javax.swing.JPanel();
         btnEdit = new javax.swing.JButton();
         btnSave = new javax.swing.JButton();
-        btnGeneratePDF = new javax.swing.JButton();
         btnEventAdd = new javax.swing.JButton();
         btnGenerateTicket = new javax.swing.JButton();
+        btnGeneratePDF = new javax.swing.JButton();
+        btnSaveAndExit = new javax.swing.JButton();
+        btnSaveAndGeneratePDF = new javax.swing.JButton();
+        btnCloneEvent = new javax.swing.JButton();
         jScrollPane2 = new javax.swing.JScrollPane();
         txtAreaDescription = new javax.swing.JTextPane();
-        cmbStatus = new javax.swing.JComboBox<>();
         jLabel14 = new javax.swing.JLabel();
         lblEventCreatedAt = new javax.swing.JLabel();
+        checkAutoCalculateReturnDate = new javax.swing.JCheckBox();
+        cmbStatus = new javax.swing.JComboBox<>();
         jPanel8 = new javax.swing.JPanel();
         jLabel15 = new javax.swing.JLabel();
         lblSubTotal = new javax.swing.JLabel();
@@ -906,7 +809,7 @@ public class EventForm extends javax.swing.JInternalFrame {
         );
         paneCustomersTableLayout.setVerticalGroup(
             paneCustomersTableLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 533, Short.MAX_VALUE)
+            .addGap(0, 642, Short.MAX_VALUE)
         );
 
         javax.swing.GroupLayout panelCustomersLayout = new javax.swing.GroupLayout(panelCustomers);
@@ -918,7 +821,7 @@ public class EventForm extends javax.swing.JInternalFrame {
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(paneCustomersTable, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(74, Short.MAX_VALUE))
+                .addContainerGap(162, Short.MAX_VALUE))
         );
         panelCustomersLayout.setVerticalGroup(
             panelCustomersLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -936,17 +839,37 @@ public class EventForm extends javax.swing.JInternalFrame {
 
         panelEvent.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
 
+        jLabel12.setFont(new java.awt.Font("Arial", 0, 12)); // NOI18N
         jLabel12.setText("Folio:");
 
+        jLabel13.setFont(new java.awt.Font("Arial", 0, 12)); // NOI18N
         jLabel13.setText("Cliente:");
 
+        lblInfoUser.setFont(new java.awt.Font("Arial", 0, 12)); // NOI18N
         lblInfoUser.setText("Atiende:");
 
+        lblFolio.setFont(new java.awt.Font("Arial", 0, 12)); // NOI18N
+        lblFolio.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         lblFolio.setText("lblFolio");
+        lblFolio.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        lblFolio.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
 
+        lblCustomer.setFont(new java.awt.Font("Arial", 0, 12)); // NOI18N
+        lblCustomer.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         lblCustomer.setText("lblCustomer");
+        lblCustomer.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        lblCustomer.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
+        lblCustomer.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                lblCustomerMouseClicked(evt);
+            }
+        });
 
+        lblUser.setFont(new java.awt.Font("Arial", 0, 12)); // NOI18N
+        lblUser.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         lblUser.setText("lblUser");
+        lblUser.setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
+        lblUser.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
@@ -960,7 +883,7 @@ public class EventForm extends javax.swing.JInternalFrame {
                     .addComponent(lblInfoUser, javax.swing.GroupLayout.PREFERRED_SIZE, 56, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(22, 22, 22)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(lblCustomer, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(lblCustomer, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 153, Short.MAX_VALUE)
                     .addComponent(lblUser, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(lblFolio, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
         );
@@ -987,7 +910,7 @@ public class EventForm extends javax.swing.JInternalFrame {
         panelInnerTableAgregados.setLayout(panelInnerTableAgregadosLayout);
         panelInnerTableAgregadosLayout.setHorizontalGroup(
             panelInnerTableAgregadosLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 969, Short.MAX_VALUE)
+            .addGap(0, 1057, Short.MAX_VALUE)
         );
         panelInnerTableAgregadosLayout.setVerticalGroup(
             panelInnerTableAgregadosLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -1058,7 +981,7 @@ public class EventForm extends javax.swing.JInternalFrame {
                 .addComponent(btnAgregadosDelete)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(btnCopyDetailRow)
-                .addContainerGap(132, Short.MAX_VALUE))
+                .addContainerGap(202, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout panelInnerAddsLayout = new javax.swing.GroupLayout(panelInnerAdds);
@@ -1161,7 +1084,6 @@ public class EventForm extends javax.swing.JInternalFrame {
             }
         });
 
-        txtPaymentImport.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.NumberFormatter()));
         txtPaymentImport.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyPressed(java.awt.event.KeyEvent evt) {
                 txtPaymentImportKeyPressed(evt);
@@ -1181,7 +1103,7 @@ public class EventForm extends javax.swing.JInternalFrame {
                             .addComponent(jLabel19)
                             .addComponent(jLabel20))
                         .addGap(0, 189, Short.MAX_VALUE))
-                    .addComponent(txtPaymentImport))
+                    .addComponent(txtPaymentImport, javax.swing.GroupLayout.Alignment.TRAILING))
                 .addContainerGap())
         );
         jPanel5Layout.setVerticalGroup(
@@ -1195,14 +1117,14 @@ public class EventForm extends javax.swing.JInternalFrame {
                 .addComponent(jLabel20)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(txtPaymentsConcept, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(209, Short.MAX_VALUE))
+                .addContainerGap(279, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout panelInnerPaymetsTableLayout = new javax.swing.GroupLayout(panelInnerPaymetsTable);
         panelInnerPaymetsTable.setLayout(panelInnerPaymetsTableLayout);
         panelInnerPaymetsTableLayout.setHorizontalGroup(
             panelInnerPaymetsTableLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 692, Short.MAX_VALUE)
+            .addGap(0, 780, Short.MAX_VALUE)
         );
         panelInnerPaymetsTableLayout.setVerticalGroup(
             panelInnerPaymetsTableLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -1235,10 +1157,13 @@ public class EventForm extends javax.swing.JInternalFrame {
 
         jTabbedPane1.addTab("Abonos", panelInnerPayments);
 
+        jLabel3.setFont(new java.awt.Font("Arial", 0, 12)); // NOI18N
         jLabel3.setText("Fecha y hora de entrega:");
 
+        jLabel8.setFont(new java.awt.Font("Arial", 0, 12)); // NOI18N
         jLabel8.setText("Fecha y hora de devolución:");
 
+        jLabel9.setFont(new java.awt.Font("Arial", 0, 12)); // NOI18N
         jLabel9.setText("Tipo:");
 
         try {
@@ -1253,10 +1178,13 @@ public class EventForm extends javax.swing.JInternalFrame {
             ex.printStackTrace();
         }
 
+        jLabel10.setFont(new java.awt.Font("Arial", 0, 12)); // NOI18N
         jLabel10.setText("Hrs.");
 
+        jLabel11.setFont(new java.awt.Font("Arial", 0, 12)); // NOI18N
         jLabel11.setText("Hrs.");
 
+        jLabel18.setFont(new java.awt.Font("Arial", 0, 12)); // NOI18N
         jLabel18.setText("Descripción:");
 
         btnEdit.setIcon(new javax.swing.ImageIcon(getClass().getResource("/alquiler/trajes/img/img32/edit-32.png"))); // NOI18N
@@ -1271,18 +1199,10 @@ public class EventForm extends javax.swing.JInternalFrame {
         btnSave.setIcon(new javax.swing.ImageIcon(getClass().getResource("/alquiler/trajes/img/img32/diskette-32.png"))); // NOI18N
         btnSave.setToolTipText("Guardar");
         btnSave.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnSave.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
         btnSave.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnSaveActionPerformed(evt);
-            }
-        });
-
-        btnGeneratePDF.setIcon(new javax.swing.ImageIcon(getClass().getResource("/alquiler/trajes/img/img32/descargar-pdf-32.png"))); // NOI18N
-        btnGeneratePDF.setToolTipText("Generar PDF");
-        btnGeneratePDF.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        btnGeneratePDF.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnGeneratePDFActionPerformed(evt);
             }
         });
 
@@ -1304,37 +1224,94 @@ public class EventForm extends javax.swing.JInternalFrame {
             }
         });
 
+        btnGeneratePDF.setIcon(new javax.swing.ImageIcon(getClass().getResource("/alquiler/trajes/img/img32/descargar-pdf-32.png"))); // NOI18N
+        btnGeneratePDF.setToolTipText("Generar PDF");
+        btnGeneratePDF.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnGeneratePDF.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnGeneratePDFActionPerformed(evt);
+            }
+        });
+
+        btnSaveAndExit.setIcon(new javax.swing.ImageIcon(getClass().getResource("/alquiler/trajes/img/img32/guardar_y_salir_32.png"))); // NOI18N
+        btnSaveAndExit.setToolTipText("Guardar y salir");
+        btnSaveAndExit.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnSaveAndExit.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        btnSaveAndExit.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnSaveAndExitActionPerformed(evt);
+            }
+        });
+
+        btnSaveAndGeneratePDF.setIcon(new javax.swing.ImageIcon(getClass().getResource("/alquiler/trajes/img/img32/pdf_and_save_32.png"))); // NOI18N
+        btnSaveAndGeneratePDF.setToolTipText("Guardar y PDF");
+        btnSaveAndGeneratePDF.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnSaveAndGeneratePDF.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        btnSaveAndGeneratePDF.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnSaveAndGeneratePDFActionPerformed(evt);
+            }
+        });
+
+        btnCloneEvent.setIcon(new javax.swing.ImageIcon(getClass().getResource("/alquiler/trajes/img/img32/copiar-32.png"))); // NOI18N
+        btnCloneEvent.setToolTipText("Clonar evento");
+        btnCloneEvent.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        btnCloneEvent.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        btnCloneEvent.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnCloneEventActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
         jPanel4.setLayout(jPanel4Layout);
         jPanel4Layout.setHorizontalGroup(
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel4Layout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(btnGenerateTicket, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(btnGenerateTicket, javax.swing.GroupLayout.PREFERRED_SIZE, 31, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(btnGeneratePDF, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(btnGeneratePDF, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(btnEventAdd, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(btnSaveAndGeneratePDF, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(btnEdit, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(btnEdit, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(btnSave, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addComponent(btnEventAdd, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(btnSave, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(btnSaveAndExit, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(btnCloneEvent, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel4Layout.setVerticalGroup(
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                .addComponent(btnSave, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(btnEdit, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(btnGeneratePDF, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(btnGenerateTicket, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-            .addComponent(btnEventAdd)
+            .addComponent(btnCloneEvent, javax.swing.GroupLayout.PREFERRED_SIZE, 39, Short.MAX_VALUE)
+            .addComponent(btnSaveAndGeneratePDF, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
+            .addComponent(btnSaveAndExit, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
+            .addComponent(btnSave, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
+            .addComponent(btnGenerateTicket, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
+            .addComponent(btnGeneratePDF, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
+            .addComponent(btnEventAdd, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
+            .addComponent(btnEdit, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
         );
 
         jScrollPane2.setViewportView(txtAreaDescription);
 
+        jLabel14.setFont(new java.awt.Font("Arial", 0, 12)); // NOI18N
         jLabel14.setText("Estado:");
 
+        lblEventCreatedAt.setFont(new java.awt.Font("Arial", 0, 12)); // NOI18N
         lblEventCreatedAt.setText("lblEventCreatedAt");
+
+        checkAutoCalculateReturnDate.setFont(new java.awt.Font("Arial", 0, 12)); // NOI18N
+        checkAutoCalculateReturnDate.setText("¿Cacular fecha de devolución?");
+        checkAutoCalculateReturnDate.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                checkAutoCalculateReturnDateActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
@@ -1344,94 +1321,100 @@ public class EventForm extends javax.swing.JInternalFrame {
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel3Layout.createSequentialGroup()
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabel9, javax.swing.GroupLayout.PREFERRED_SIZE, 164, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel8, javax.swing.GroupLayout.PREFERRED_SIZE, 164, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 164, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel14, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 164, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(jLabel14, javax.swing.GroupLayout.PREFERRED_SIZE, 164, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jLabel8)
+                            .addComponent(jLabel9, javax.swing.GroupLayout.PREFERRED_SIZE, 164, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                            .addComponent(dateChooserDeliveryDate, javax.swing.GroupLayout.DEFAULT_SIZE, 171, Short.MAX_VALUE)
+                            .addComponent(dateChooserReturnDate, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(cmbCatalogType, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(cmbStatus, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addGap(0, 0, Short.MAX_VALUE))
+                    .addComponent(lblEventCreatedAt, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(checkAutoCalculateReturnDate, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addGap(18, 18, 18)
+                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(txtReturnHour, javax.swing.GroupLayout.DEFAULT_SIZE, 56, Short.MAX_VALUE)
+                            .addComponent(txtDeliveryHour))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel3Layout.createSequentialGroup()
-                                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(dateChooserReturnDate, javax.swing.GroupLayout.PREFERRED_SIZE, 142, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(dateChooserDeliveryDate, javax.swing.GroupLayout.PREFERRED_SIZE, 142, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(txtDeliveryHour, javax.swing.GroupLayout.PREFERRED_SIZE, 83, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(txtReturnHour, javax.swing.GroupLayout.PREFERRED_SIZE, 83, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabel11, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(jLabel10, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                            .addComponent(cmbCatalogType, javax.swing.GroupLayout.PREFERRED_SIZE, 142, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(cmbStatus, javax.swing.GroupLayout.PREFERRED_SIZE, 142, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                    .addComponent(lblEventCreatedAt, javax.swing.GroupLayout.PREFERRED_SIZE, 311, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel18, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
+                            .addComponent(jLabel10, javax.swing.GroupLayout.PREFERRED_SIZE, 31, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jLabel11, javax.swing.GroupLayout.PREFERRED_SIZE, 31, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jScrollPane2, javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(jPanel4, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                        .addContainerGap())))
+                            .addComponent(jLabel18, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 425, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addGap(121, 121, 121)
+                        .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                .addContainerGap())
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel3Layout.createSequentialGroup()
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(checkAutoCalculateReturnDate)
+                    .addComponent(jLabel18, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addGroup(jPanel3Layout.createSequentialGroup()
-                        .addContainerGap()
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 22, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(dateChooserDeliveryDate, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel3)
                             .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                                 .addComponent(txtDeliveryHour, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addComponent(jLabel10)))
-                        .addGap(9, 9, 9)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(dateChooserReturnDate, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel8)
-                            .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                .addComponent(txtReturnHour, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(jLabel11)))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel9)
-                            .addComponent(cmbCatalogType, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                    .addGroup(jPanel3Layout.createSequentialGroup()
-                        .addGap(8, 8, 8)
-                        .addComponent(jLabel18)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 67, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                            .addGroup(jPanel3Layout.createSequentialGroup()
+                                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                    .addComponent(txtReturnHour, javax.swing.GroupLayout.PREFERRED_SIZE, 22, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(jLabel11))
+                                .addGap(0, 0, Short.MAX_VALUE))
+                            .addGroup(jPanel3Layout.createSequentialGroup()
+                                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(jLabel8, javax.swing.GroupLayout.PREFERRED_SIZE, 22, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(dateChooserReturnDate, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addComponent(jLabel9, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(cmbCatalogType))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                    .addComponent(jLabel14, javax.swing.GroupLayout.PREFERRED_SIZE, 24, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(cmbStatus, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))))
+                    .addComponent(jScrollPane2))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel3Layout.createSequentialGroup()
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(cmbStatus, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel14))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(lblEventCreatedAt, javax.swing.GroupLayout.PREFERRED_SIZE, 20, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(0, 0, Short.MAX_VALUE))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+                    .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(lblEventCreatedAt, javax.swing.GroupLayout.PREFERRED_SIZE, 20, javax.swing.GroupLayout.PREFERRED_SIZE)))
         );
 
         jPanel8.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
 
+        jLabel15.setFont(new java.awt.Font("Arial", 0, 12)); // NOI18N
         jLabel15.setText("Sub total:");
 
+        lblSubTotal.setFont(new java.awt.Font("Arial", 0, 12)); // NOI18N
         lblSubTotal.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         lblSubTotal.setText("lblSubTotal");
 
+        jLabel17.setFont(new java.awt.Font("Arial", 0, 12)); // NOI18N
         jLabel17.setText("Total:");
 
+        lblTotal.setFont(new java.awt.Font("Arial", 0, 12)); // NOI18N
         lblTotal.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         lblTotal.setText("lblTotal");
 
+        lblPayments.setFont(new java.awt.Font("Arial", 0, 12)); // NOI18N
         lblPayments.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
         lblPayments.setText("lblPayments");
 
+        jLabel21.setFont(new java.awt.Font("Arial", 0, 12)); // NOI18N
         jLabel21.setText("Abonos:");
 
         javax.swing.GroupLayout jPanel8Layout = new javax.swing.GroupLayout(jPanel8);
@@ -1479,24 +1462,24 @@ public class EventForm extends javax.swing.JInternalFrame {
                 .addGroup(panelEventLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jTabbedPane1)
                     .addGroup(panelEventLayout.createSequentialGroup()
-                        .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, 887, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(18, 18, Short.MAX_VALUE)
                         .addGroup(panelEventLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(jPanel8, javax.swing.GroupLayout.PREFERRED_SIZE, 235, Short.MAX_VALUE)
-                            .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+                            .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(jPanel8, javax.swing.GroupLayout.PREFERRED_SIZE, 239, Short.MAX_VALUE))))
                 .addContainerGap())
         );
         panelEventLayout.setVerticalGroup(
             panelEventLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(panelEventLayout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(panelEventLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, 159, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(panelEventLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addGroup(panelEventLayout.createSequentialGroup()
                         .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jPanel8, javax.swing.GroupLayout.PREFERRED_SIZE, 77, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addGap(7, 7, 7)
+                        .addComponent(jPanel8, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jTabbedPane1)
                 .addContainerGap())
         );
@@ -1564,9 +1547,14 @@ public class EventForm extends javax.swing.JInternalFrame {
     }//GEN-LAST:event_btnEditActionPerformed
 
     private void btnSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSaveActionPerformed
-        save();
+        try {
+            save();
+        } catch (BusinessException businessException) {
+            JOptionPane.showMessageDialog(this, businessException.getMessage(), MESSAGE_TITLE_ERROR, JOptionPane.ERROR_MESSAGE);  
+        }
     }//GEN-LAST:event_btnSaveActionPerformed
 
+    
     private DetailEvent getDetailEventFromRowSelected () {
         return
                 DetailEvent.builder()
@@ -1593,6 +1581,7 @@ public class EventForm extends javax.swing.JInternalFrame {
                         ))
                         .build();
     }
+
     
     private void editDetail () {
         if (this.tableFormatDetail.getSelectedRow() == - 1) {
@@ -1600,9 +1589,18 @@ public class EventForm extends javax.swing.JInternalFrame {
                     ApplicationConstants.SELECT_A_ROW_NECCESSARY, MESSAGE_TITLE_ERROR, JOptionPane.WARNING_MESSAGE);
             return;
         }
+        
+        showDetailEventAddToTableDialog(getDetailEventFromRowSelected(),String.valueOf(this.tableFormatDetail.getSelectedRow()));
          
-        DetailEvent detailEvent = getDetailEventFromRowSelected();
-        showDetailEventAddToTableDialog(detailEvent,String.valueOf(this.tableFormatDetail.getSelectedRow()));
+        /*Long id = Long.parseLong(
+                String.valueOf(tableFormatDetail.getValueAt(tableFormatDetail.getSelectedRow(), TableFormatDetail.Column.ID.getNumber())));
+        try {
+            DetailEvent detailEventFromRowSelected = detailEventService.findById(id);
+            showDetailEventAddToTableDialog(detailEventFromRowSelected,String.valueOf(this.tableFormatDetail.getSelectedRow()));
+        } catch (BusinessException businessException) {
+            JOptionPane.showMessageDialog(this, 
+                businessException.getMessage(), MESSAGE_TITLE_ERROR, JOptionPane.ERROR_MESSAGE);
+        }*/
     }
     
     private void btnAgregadosEditActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAgregadosEditActionPerformed
@@ -1610,7 +1608,7 @@ public class EventForm extends javax.swing.JInternalFrame {
         editDetail();
     }//GEN-LAST:event_btnAgregadosEditActionPerformed
 
-    private void addDetailToTable (final DetailEvent detail, String referenceRow) {
+    protected void addDetailToTable (final DetailEvent detail, String referenceRow) {
         Float total = 
                     detail.getUnitPrice() - (detail.getAdvancePayment() != null ? detail.getAdvancePayment() : 0F);
         if (referenceRow == null) {
@@ -1623,6 +1621,7 @@ public class EventForm extends javax.swing.JInternalFrame {
                 detail.getNameOfAggregate(),
                 detail.getItems(),
                 detail.getAdjustments(),
+                detail.getStatus(),
                 decimalFormat.format(detail.getUnitPrice()),
                 decimalFormat.format(detail.getAdvancePayment()),
                 decimalFormat.format(total)
@@ -1640,6 +1639,9 @@ public class EventForm extends javax.swing.JInternalFrame {
             
             tableFormatDetail.setValueAt(detail.getAdjustments(),
                     Integer.parseInt(referenceRow),TableFormatDetail.Column.ADJUTS.getNumber() );
+            
+            tableFormatDetail.setValueAt(detail.getStatus(),
+                    Integer.parseInt(referenceRow),TableFormatDetail.Column.STATUS.getNumber() );
             
             tableFormatDetail.setValueAt(detail.getUnitPrice(),
                     Integer.parseInt(referenceRow),TableFormatDetail.Column.IMPORT.getNumber() );
@@ -1659,11 +1661,30 @@ public class EventForm extends javax.swing.JInternalFrame {
         DetailEventAddToTableDialog dialog = 
                new DetailEventAddToTableDialog(f, true, detail);
                
-       DetailEvent restultDetail = dialog.showDialog();
-       if (restultDetail != null) {
-            addDetailToTable(restultDetail,referenceRow);
+       DetailEvent resultDetailEvent = dialog.showDialog();
+       if (resultDetailEvent != null) {
+           if (detail != null) {
+            resultDetailEvent.setId(detail.getId());
+           }
+           addDetailToTable(resultDetailEvent,referenceRow);
+           saveDetailEventWhenDialogIsClosed(resultDetailEvent);
+            
        }
     }
+    
+    private void saveDetailEventWhenDialogIsClosed (DetailEvent resultDetailEvent) {
+        if (this.event.getId() != null) {
+            resultDetailEvent.setEvent(event);
+            try {
+                detailEventService.saveOrUpdate(resultDetailEvent);
+            } catch (BusinessException businessException) {
+                JOptionPane.showMessageDialog(this, 
+                    businessException.getMessage(), MESSAGE_TITLE_ERROR, JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+    
+    
     
     private void btnAgregadosAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAgregadosAddActionPerformed
        showDetailEventAddToTableDialog(null,null);        
@@ -1714,6 +1735,14 @@ public class EventForm extends javax.swing.JInternalFrame {
             JOptionPane.showMessageDialog(this, 
                     ApplicationConstants.MISSING_DATA, MESSAGE_TITLE_ERROR, JOptionPane.WARNING_MESSAGE);
             return;
+        } else {
+            try {
+                Float.parseFloat(txtPaymentImport.getText());
+            } catch (NumberFormatException numberFormatException) {
+                JOptionPane.showMessageDialog(this, 
+                    "Ingresa un número valido para el 'abono'", MESSAGE_TITLE_ERROR, JOptionPane.WARNING_MESSAGE);
+                return;
+            }
         }
         
         if (referenceRowToEditPaymentTable != null) {
@@ -1743,20 +1772,14 @@ public class EventForm extends javax.swing.JInternalFrame {
         cleanInputsPaymentForm();
         total();
     }
-    
-    private void enabledInputsPaymentForm () {
-        txtPaymentImport.setEnabled(true);
-        txtPaymentsConcept.setEnabled(true);
-        txtPaymentImport.requestFocus();
-    }
-    
+       
     private void cleanForm () {
         
         final Date now = new Date();
         
         lblFolio.setText(EMPTY_STRING_TXT_FIELD);
         this.dateChooserDeliveryDate.setDate(now);
-        this.dateChooserReturnDate.setDate(now);
+        this.dateChooserReturnDate.setDate(null);
         this.cmbCatalogType.setSelectedIndex(0);
         this.cmbStatus.setSelectedIndex(0);
         this.txtDeliveryHour.setText(EMPTY_STRING_TXT_FIELD);
@@ -1829,12 +1852,6 @@ public class EventForm extends javax.swing.JInternalFrame {
         generateEventPDF();
     }//GEN-LAST:event_btnGeneratePDFActionPerformed
 
-    private void txtPaymentImportKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtPaymentImportKeyPressed
-        if (evt.getKeyCode() == ENTER_KEY) {
-            addRowToPaymentTable();
-        }
-    }//GEN-LAST:event_txtPaymentImportKeyPressed
-
     private void txtPaymentsConceptKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtPaymentsConceptKeyPressed
         if (evt.getKeyCode() == ENTER_KEY) {
             addRowToPaymentTable();
@@ -1848,14 +1865,14 @@ public class EventForm extends javax.swing.JInternalFrame {
     private void panelInnerPaymentsMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_panelInnerPaymentsMouseClicked
         txtPaymentImport.requestFocus();
     }//GEN-LAST:event_panelInnerPaymentsMouseClicked
-    private void newEventForm () {
+    protected void newEventForm () {
+        
         btnEventAdd.setEnabled(false);
-        this.eventId = null;
         cleanCustomerInputs();
         cleanInputsPaymentForm();
         cleanForm();
-        enableForm();
-        initFormWithNewEvent();
+        enableForm();        
+
     }
     private void btnEventAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEventAddActionPerformed
         newEventForm();
@@ -1875,30 +1892,82 @@ public class EventForm extends javax.swing.JInternalFrame {
         generateTicket();
     }//GEN-LAST:event_btnGenerateTicketActionPerformed
 
+    private void btnSaveAndExitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSaveAndExitActionPerformed
+        
+        try {
+            save();
+            this.setVisible(false);
+        } catch (BusinessException businessException) {
+            JOptionPane.showMessageDialog(this, businessException.getMessage(), MESSAGE_TITLE_ERROR, JOptionPane.ERROR_MESSAGE);  
+        }
+        
+        
+    }//GEN-LAST:event_btnSaveAndExitActionPerformed
+
+    private void btnSaveAndGeneratePDFActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSaveAndGeneratePDFActionPerformed
+        
+        try {
+            save();
+            generateEventPDF();
+        } catch (BusinessException businessException) {
+            JOptionPane.showMessageDialog(this, businessException.getMessage(), MESSAGE_TITLE_ERROR, JOptionPane.ERROR_MESSAGE);  
+        }
+        
+    }//GEN-LAST:event_btnSaveAndGeneratePDFActionPerformed
+
+    private void btnCloneEventActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCloneEventActionPerformed
+        Customer customer = this.event.getCustomer();
+        this.event = new Event();
+        this.event.setCustomer(customer);
+        enableForm();
+        this.lblFolio.setText("");
+        this.setTitle(ApplicationConstants.TITLE_NEW_EVENT_FORM);
+    }//GEN-LAST:event_btnCloneEventActionPerformed
+
+    private void txtPaymentImportKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtPaymentImportKeyPressed
+        if (evt.getKeyCode() == ENTER_KEY) {
+            addRowToPaymentTable();
+        }
+    }//GEN-LAST:event_txtPaymentImportKeyPressed
+
+    private void lblCustomerMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_lblCustomerMouseClicked
+        JOptionPane.showMessageDialog(
+                this,Utility.getCustomerTels(
+                        this.event.getCustomer()) , "Telefonos del cliente", JOptionPane.INFORMATION_MESSAGE);
+    }//GEN-LAST:event_lblCustomerMouseClicked
+
+    private void checkAutoCalculateReturnDateActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_checkAutoCalculateReturnDateActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_checkAutoCalculateReturnDateActionPerformed
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnAgregadosAdd;
     private javax.swing.JButton btnAgregadosDelete;
     private javax.swing.JButton btnAgregadosEdit;
+    protected javax.swing.JButton btnCloneEvent;
     private javax.swing.JButton btnCopyDetailRow;
-    private javax.swing.JButton btnEdit;
-    private javax.swing.JButton btnEventAdd;
-    private javax.swing.JButton btnGeneratePDF;
-    private javax.swing.JButton btnGenerateTicket;
+    protected javax.swing.JButton btnEdit;
+    protected javax.swing.JButton btnEventAdd;
+    protected javax.swing.JButton btnGeneratePDF;
+    protected javax.swing.JButton btnGenerateTicket;
     private javax.swing.JButton btnPaymentsDelete;
     private javax.swing.JButton btnPaymentsEdit;
     private javax.swing.JButton btnPaymentsSave;
-    private javax.swing.JButton btnSave;
+    protected javax.swing.JButton btnSave;
+    protected javax.swing.JButton btnSaveAndExit;
+    protected javax.swing.JButton btnSaveAndGeneratePDF;
     private javax.swing.JButton btnSaveCustomer;
-    private javax.swing.JComboBox<CatalogTypeEvent> cmbCatalogType;
-    private javax.swing.JComboBox<CatalogStatusEvent> cmbStatus;
-    private com.toedter.calendar.JDateChooser dateChooserDeliveryDate;
-    private com.toedter.calendar.JDateChooser dateChooserReturnDate;
+    private javax.swing.JCheckBox checkAutoCalculateReturnDate;
+    protected javax.swing.JComboBox<CatalogTypeEvent> cmbCatalogType;
+    protected javax.swing.JComboBox<CatalogStatusEvent> cmbStatus;
+    protected com.toedter.calendar.JDateChooser dateChooserDeliveryDate;
+    protected com.toedter.calendar.JDateChooser dateChooserReturnDate;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
-    private javax.swing.JLabel jLabel12;
-    private javax.swing.JLabel jLabel13;
+    protected javax.swing.JLabel jLabel12;
+    protected javax.swing.JLabel jLabel13;
     private javax.swing.JLabel jLabel14;
     private javax.swing.JLabel jLabel15;
     private javax.swing.JLabel jLabel17;
@@ -1924,14 +1993,14 @@ public class EventForm extends javax.swing.JInternalFrame {
     private javax.swing.JPanel jPanel8;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JTabbedPane jTabbedPane1;
-    private javax.swing.JLabel lblCustomer;
-    private javax.swing.JLabel lblEventCreatedAt;
-    private javax.swing.JLabel lblFolio;
-    private javax.swing.JLabel lblInfoUser;
-    private javax.swing.JLabel lblPayments;
-    private javax.swing.JLabel lblSubTotal;
-    private javax.swing.JLabel lblTotal;
-    private javax.swing.JLabel lblUser;
+    protected javax.swing.JLabel lblCustomer;
+    protected javax.swing.JLabel lblEventCreatedAt;
+    protected javax.swing.JLabel lblFolio;
+    protected javax.swing.JLabel lblInfoUser;
+    protected javax.swing.JLabel lblPayments;
+    protected javax.swing.JLabel lblSubTotal;
+    protected javax.swing.JLabel lblTotal;
+    protected javax.swing.JLabel lblUser;
     private javax.swing.JPanel paneCustomersTable;
     private javax.swing.JPanel panelCustomers;
     private javax.swing.JPanel panelEvent;
@@ -1939,17 +2008,17 @@ public class EventForm extends javax.swing.JInternalFrame {
     private javax.swing.JPanel panelInnerPayments;
     private javax.swing.JPanel panelInnerPaymetsTable;
     private javax.swing.JPanel panelInnerTableAgregados;
-    private javax.swing.JTabbedPane tabPaneMain;
-    private javax.swing.JTextPane txtAreaDescription;
-    private javax.swing.JFormattedTextField txtDeliveryHour;
+    protected javax.swing.JTabbedPane tabPaneMain;
+    protected javax.swing.JTextPane txtAreaDescription;
+    protected javax.swing.JFormattedTextField txtDeliveryHour;
     private javax.swing.JTextField txtEmail;
     private javax.swing.JTextField txtLastName;
-    private javax.swing.JTextField txtName;
-    private javax.swing.JFormattedTextField txtPaymentImport;
+    protected javax.swing.JTextField txtName;
+    private javax.swing.JTextField txtPaymentImport;
     private javax.swing.JTextField txtPaymentsConcept;
     private javax.swing.JTextField txtPhoneNumber1;
     private javax.swing.JTextField txtPhoneNumber2;
     private javax.swing.JTextField txtPhoneNumber3;
-    private javax.swing.JFormattedTextField txtReturnHour;
+    protected javax.swing.JFormattedTextField txtReturnHour;
     // End of variables declaration//GEN-END:variables
 }

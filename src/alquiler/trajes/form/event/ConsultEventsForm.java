@@ -4,7 +4,6 @@ import alquiler.trajes.constant.ApplicationConstants;
 import static alquiler.trajes.constant.ApplicationConstants.DATE_FORMAT_FOR_SQL_QUERY;
 import static alquiler.trajes.constant.ApplicationConstants.DATE_LARGE;
 import static alquiler.trajes.constant.ApplicationConstants.DECIMAL_FORMAT;
-import static alquiler.trajes.constant.ApplicationConstants.DESCRIPTION_FORMAT_24_HRS;
 import static alquiler.trajes.constant.ApplicationConstants.EMPTY_STRING_TXT_FIELD;
 import static alquiler.trajes.constant.ApplicationConstants.END_DAY_HOUR_MINUTES;
 import static alquiler.trajes.constant.ApplicationConstants.ENTER_KEY;
@@ -12,13 +11,11 @@ import static alquiler.trajes.constant.ApplicationConstants.LOCALE_COUNTRY;
 import static alquiler.trajes.constant.ApplicationConstants.LOCALE_LANGUAGE;
 import static alquiler.trajes.constant.ApplicationConstants.MESSAGE_NUMBER_FORMAT_ERROR;
 import static alquiler.trajes.constant.ApplicationConstants.PATH_NAME_DETAIL_REPORT_A4_HORIZONTAL;
-import static alquiler.trajes.constant.ApplicationConstants.PATH_NAME_EVENT_REPORT_VERTICAL_A5;
 import static alquiler.trajes.constant.ApplicationConstants.PDF_NAME_DETAIL_REPORT_A4_HORIZONTAL;
-import static alquiler.trajes.constant.ApplicationConstants.PDF_NAME_EVENT_REPORT_VERTICAL_A5;
 import static alquiler.trajes.constant.ApplicationConstants.SELECT_A_ROW_NECCESSARY;
 import static alquiler.trajes.constant.ApplicationConstants.START_DAY_HOUR_MINUTES;
 import static alquiler.trajes.constant.ApplicationConstants.TITLE_CONSULT_EVENTS_FORM;
-import alquiler.trajes.constant.GeneralInfoEnum;
+import alquiler.trajes.entity.CatalogStatusEvent;
 import alquiler.trajes.entity.DetailEvent;
 import alquiler.trajes.entity.Event;
 import alquiler.trajes.exceptions.BusinessException;
@@ -26,16 +23,17 @@ import alquiler.trajes.exceptions.InvalidDataException;
 import alquiler.trajes.form.MainForm;
 import alquiler.trajes.model.params.EventParameter;
 import alquiler.trajes.model.params.result.EventResult;
+import alquiler.trajes.service.CatalogStatusEventService;
 import alquiler.trajes.service.DetailEventService;
 import alquiler.trajes.service.EventResultService;
 import alquiler.trajes.service.EventService;
-import alquiler.trajes.service.GeneralInfoService;
 import alquiler.trajes.service.PaymentService;
 import alquiler.trajes.table.TableConsultEvents;
 import alquiler.trajes.ticket.EventTicket;
 import alquiler.trajes.ticket.TicketTemplate;
 import alquiler.trajes.util.JasperPrintUtil;
 import alquiler.trajes.util.Utility;
+import java.awt.Toolkit;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.text.DecimalFormat;
@@ -57,7 +55,7 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
     private final EventResultService eventResultService;
     private final EventService eventService;
     private final DetailEventService detailEventService;
-    private final GeneralInfoService generalInfoService;
+    private final CatalogStatusEventService catalogStatusEventService;
     private final JasperPrintUtil jasperPrintUtil;
     private final PaymentService paymentService;
     private final FastDateFormat fastDateFormatLarge;
@@ -70,8 +68,11 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
         initComponents();
         this.setTitle(TITLE_CONSULT_EVENTS_FORM);
         this.setClosable(Boolean.TRUE);
+        
+        
+        
+        catalogStatusEventService = CatalogStatusEventService.getInstance();
         eventResultService = EventResultService.getInstance();
-        generalInfoService = GeneralInfoService.getInstance();
         eventService = EventService.getInstance();
         detailEventService = DetailEventService.getInstance();
         paymentService = PaymentService.getInstance();
@@ -79,6 +80,7 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
         jasperPrintUtil = JasperPrintUtil.getInstance();
         locale = new Locale(LOCALE_LANGUAGE, LOCALE_COUNTRY);
         fastDateFormatLarge = FastDateFormat.getInstance(DATE_LARGE,locale);
+        initCmbs();
         Utility.addJtableToPane(719, 451, this.panelTable, tableConsultEvents);        
         search(false);
         addEventListenerToTable();
@@ -88,9 +90,36 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
         setMaximizable(true);
     }
     
+    private void initCmbs () {
+        this.cmbLimit.removeAllItems();
+        cmbLimit.addItem("100");
+        cmbLimit.addItem("500");
+        cmbLimit.addItem("1000");
+        cmbLimit.addItem("10000");
+        
+        try {
+            List<CatalogStatusEvent> catalogs = catalogStatusEventService.getAll();
+            cmbStatus.removeAllItems();
+
+            cmbStatus.addItem(
+                    new CatalogStatusEvent(0L, ApplicationConstants.CMB_SELECCIONE)
+            );
+
+            catalogs.stream().forEach(t -> {
+                cmbStatus.addItem(t);
+            });
+        } catch (BusinessException businessException) {
+           log.error(businessException);
+           JOptionPane.showMessageDialog(
+                   this, businessException.getMessage(),
+                   ApplicationConstants.MESSAGE_UNEXPECTED_ERROR,
+                   JOptionPane.ERROR_MESSAGE);  
+        }
+    }
+    
     private void generateEventsFoliosPDF () {
          int LIMIT_ROWS_SELECTED = 100;         
-         Map parameters = new HashMap<>();
+         Map<String,Object> parameters = new HashMap<>();
          try {
              List<String> ids = getEventIdsFromTable();
              if (ids.size() > LIMIT_ROWS_SELECTED) {
@@ -101,7 +130,7 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
              parameters.put("TITLE", "Informe por folios.");             
              jasperPrintUtil.showPDF(parameters, PATH_NAME_DETAIL_REPORT_A4_HORIZONTAL, PDF_NAME_DETAIL_REPORT_A4_HORIZONTAL);
          } catch (BusinessException e) {
-            log.error(e);
+           log.error(e);
            JOptionPane.showMessageDialog(
                    this, e.getMessage(),
                    ApplicationConstants.MESSAGE_UNEXPECTED_ERROR,
@@ -138,10 +167,7 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
                    JOptionPane.ERROR_MESSAGE);  
         }
     }
-    private void generateEventPDF () {        
-        
-        
-        Map parameters = new HashMap<>();
+    private void generateEventPDF () {
         
         try {
             
@@ -150,26 +176,8 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
                     TableConsultEvents.Column.BOOLEAN.getNumber(),
                     TableConsultEvents.Column.ID.getNumber());
             
-            Float sumPayment = paymentService.getPaymentsByEvent(Long.parseLong(id));
-            Float sumDetail = detailEventService.getSubtotalByEvent(Long.parseLong(id));
-            
-            final Event event = eventService.findById(Long.parseLong(id));
-            parameters.put("ID", event.getId().toString());
-            parameters.put("FOLIO", event.getId().toString());
-            parameters.put("USER_NAME", event.getUser().getName()+" "+event.getUser().getLastName());
-            parameters.put("CUSTOMER_NAME", event.getCustomer().getName()+" "+event.getCustomer().getLastName());
-            parameters.put("TYPE_EVENT", event.getCatalogTypeEvent().getName());
-            parameters.put("STATUS_EVENT", event.getCatalogStatusEvent().getName());
-            parameters.put("DELIVERY_DATE", fastDateFormatLarge.format(event.getDeliveryDate())+" "+event.getDeliveryHour()+DESCRIPTION_FORMAT_24_HRS);
-            parameters.put("RETURN_DATE", fastDateFormatLarge.format(event.getReturnDate())+" "+event.getReturnHour()+DESCRIPTION_FORMAT_24_HRS);
-            parameters.put("CREATED_AT_DATE", fastDateFormatLarge.format(event.getCreatedAt()));
-            parameters.put("DESCRIPTION", event.getDescription());
-            parameters.put("PAYMENTS", decimalFormat.format(sumPayment));
-            parameters.put("SUBTOTAL", decimalFormat.format(sumDetail));
-            parameters.put("TOTAL", decimalFormat.format(sumDetail-sumPayment));
-            parameters.put("COMPANY_NAME", generalInfoService.getByKey(GeneralInfoEnum.COMPANY_NAME.getKey()));
-            parameters.put("INFO_FOOTER_PDF_A5", generalInfoService.getByKey(GeneralInfoEnum.INFO_FOOTER_PDF_A5.getKey()));
-            jasperPrintUtil.showPDF(parameters, PATH_NAME_EVENT_REPORT_VERTICAL_A5, PDF_NAME_EVENT_REPORT_VERTICAL_A5);
+            final Event event = eventService.findById(Long.parseLong(id));       
+            jasperPrintUtil.printEventPDF(event);        
             
         } catch (BusinessException e) {
             log.error(e);
@@ -182,6 +190,7 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
     
     private void addEventListenerToTable () {
         tableConsultEvents.addMouseListener(new MouseAdapter() {
+            @Override
             public void mouseClicked(MouseEvent e) {
               if (e.getClickCount() == 2) {
                   
@@ -229,9 +238,10 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
                                                 this.dateChooserEndReturnDate.getDate()) + END_DAY_HOUR_MINUTES :
                                         null
                         ).customerName(txtCustomerName.getText().trim().toLowerCase())
+                        .status((CatalogStatusEvent)cmbStatus.getModel().getSelectedItem())
                         .eventId(!txtFolio.getText().isEmpty() ? Long.parseLong(txtFolio.getText().trim()) : null)
                         .description(txtDescription.getText())
-                        .limit("1000")
+                        .limit(this.cmbLimit.getSelectedItem().toString())
                         .build();
     }
         
@@ -266,12 +276,21 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
                 };
                 temp.addRow(row);
             }
+            
+            if (results.isEmpty()) {
+                lblInfo.setText("No se obtuvieron resultados.");
+            } else {
+                lblInfo.setText("Resultados obtenidos: "+results.size()+", límite de resultados: "+this.cmbLimit.getSelectedItem().toString());
+            }
+            
         } catch (BusinessException e) {
            log.error(e);
            JOptionPane.showMessageDialog(
                    this, e.getMessage(),
                    ApplicationConstants.MESSAGE_UNEXPECTED_ERROR,
                    JOptionPane.ERROR_MESSAGE);
+        } finally {
+            Toolkit.getDefaultToolkit().beep();
         }
     }
 
@@ -306,6 +325,11 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
         btnGeneratePDFDetail = new javax.swing.JButton();
         btnSearch = new javax.swing.JButton();
         btnGenerateTicket = new javax.swing.JButton();
+        lblInfo = new javax.swing.JLabel();
+        cmbLimit = new javax.swing.JComboBox<>();
+        jLabel7 = new javax.swing.JLabel();
+        cmbStatus = new javax.swing.JComboBox<>();
+        jLabel8 = new javax.swing.JLabel();
         panelTable = new javax.swing.JPanel();
 
         setPreferredSize(new java.awt.Dimension(1070, 648));
@@ -360,7 +384,7 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
             jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel6Layout.createSequentialGroup()
                 .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                    .addComponent(jLabel5, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jLabel5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(jPanel6Layout.createSequentialGroup()
                         .addComponent(dateChooserInitReturnDate, javax.swing.GroupLayout.PREFERRED_SIZE, 146, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -444,42 +468,71 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
             }
         });
 
+        lblInfo.setText("jLabel4");
+
+        cmbLimit.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        cmbLimit.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+
+        jLabel7.setText("Limitar resultados a:");
+
+        cmbStatus.setFont(new java.awt.Font("Arial", 0, 12)); // NOI18N
+        cmbStatus.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+
+        jLabel8.setText("Estado:");
+
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                    .addComponent(jPanel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabel1)
-                            .addComponent(txtDescription, javax.swing.GroupLayout.PREFERRED_SIZE, 168, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(txtCustomerName, javax.swing.GroupLayout.PREFERRED_SIZE, 168, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel2))))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(lblInfo, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                            .addComponent(jPanel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addGroup(jPanel2Layout.createSequentialGroup()
+                                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(jLabel1)
+                                    .addComponent(txtDescription, javax.swing.GroupLayout.PREFERRED_SIZE, 168, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(txtCustomerName, javax.swing.GroupLayout.PREFERRED_SIZE, 168, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(jLabel2))))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(txtFolio, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 51, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGroup(jPanel2Layout.createSequentialGroup()
+                                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
+                                        .addComponent(txtFolio, javax.swing.GroupLayout.PREFERRED_SIZE, 51, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addGap(18, 18, 18))
+                                    .addGroup(jPanel2Layout.createSequentialGroup()
+                                        .addComponent(jLabel6)
+                                        .addGap(40, 40, 40)))
+                                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(cmbStatus, javax.swing.GroupLayout.PREFERRED_SIZE, 159, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(jLabel8))
+                                .addGap(78, 78, 78)))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(btnSearch, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(btnCleanForm, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(btnGoToEventForm, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(btnGeneratePDF, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(btnGeneratePDFDetail, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(btnGenerateTicket, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(jLabel6))
-                .addContainerGap(50, Short.MAX_VALUE))
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addGroup(jPanel2Layout.createSequentialGroup()
+                                .addComponent(btnSearch, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(btnCleanForm, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(btnGoToEventForm, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(btnGeneratePDF, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(btnGeneratePDFDetail, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(btnGenerateTicket, javax.swing.GroupLayout.PREFERRED_SIZE, 41, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                .addComponent(jLabel7)
+                                .addComponent(cmbLimit, javax.swing.GroupLayout.PREFERRED_SIZE, 151, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addGap(0, 38, Short.MAX_VALUE)))
+                .addContainerGap())
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -506,12 +559,20 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addComponent(jLabel6)
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                .addComponent(jLabel6)
+                                .addComponent(jLabel7))
+                            .addComponent(jLabel8))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(txtFolio, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(txtFolio, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(cmbLimit, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(cmbStatus, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(0, 13, Short.MAX_VALUE))
                     .addComponent(jPanel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addContainerGap())
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(lblInfo))
         );
 
         javax.swing.GroupLayout panelTableLayout = new javax.swing.GroupLayout(panelTable);
@@ -522,7 +583,7 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
         );
         panelTableLayout.setVerticalGroup(
             panelTableLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 396, Short.MAX_VALUE)
+            .addGap(0, 404, Short.MAX_VALUE)
         );
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
@@ -594,11 +655,8 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
         }
     }//GEN-LAST:event_txtFolioKeyPressed
 
-    private void showEventForm (String eventId) {
-        EventForm eventForm = new EventForm(Long.parseLong(eventId));
-        eventForm.setLocation(this.getWidth() / 2 - eventForm.getWidth() / 2, this.getHeight() / 2 - eventForm.getHeight() / 2 - 20);
-        MainForm.jDesktopPane1.add(eventForm);
-        eventForm.show();
+    private void showEventForm (String eventId) {        
+        Utility.openInternalForm(new EditEvent(Long.parseLong(eventId)));        
     }
     
 
@@ -671,6 +729,8 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
     private javax.swing.JButton btnGenerateTicket;
     private javax.swing.JButton btnGoToEventForm;
     private javax.swing.JButton btnSearch;
+    private javax.swing.JComboBox<String> cmbLimit;
+    private javax.swing.JComboBox<CatalogStatusEvent> cmbStatus;
     private com.toedter.calendar.JDateChooser dateChooserEndDeliveryDate;
     private com.toedter.calendar.JDateChooser dateChooserEndReturnDate;
     private com.toedter.calendar.JDateChooser dateChooserInitDeliveryDate;
@@ -680,10 +740,13 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel6;
+    private javax.swing.JLabel jLabel7;
+    private javax.swing.JLabel jLabel8;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel4;
     private javax.swing.JPanel jPanel6;
+    private javax.swing.JLabel lblInfo;
     private javax.swing.JPanel panelTable;
     private javax.swing.JTextField txtCustomerName;
     private javax.swing.JTextField txtDescription;

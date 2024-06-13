@@ -1,6 +1,8 @@
 package alquiler.trajes.constant;
 
-public interface ApplicationConstants {
+public class ApplicationConstants {
+    
+    private ApplicationConstants () {}
        
     public static final String LOCALE_LANGUAGE = "es";
     public static final String LOCALE_COUNTRY = "MX";
@@ -29,7 +31,9 @@ public interface ApplicationConstants {
     public static final String TITLE_LOGIN_FORM = "Iniciar sesión.";
     public static final String TITLE_USERS_FORM = "Usuarios.";
     public static final String TITLE_CUSTOMERS_FORM = "Clientes.";
-    public static final String TITLE_EVENTS_FORM = "Eventos.";
+    public static final String TITLE_NEW_EVENT_FORM = "Nuevo evento.";
+    public static final String TITLE_EDIT_EVENT_FORM = "Editar evento.";
+    public static final String TITLE_EVENTS_FORM = "Nuevo evento.";
     public static final String TITLE_CONSULT_EVENTS_FORM = "Consultar eventos.";
     public static final String TITLE_DETAIL_EVENT_DIALOG_FORM = "Detalle evento.";
        

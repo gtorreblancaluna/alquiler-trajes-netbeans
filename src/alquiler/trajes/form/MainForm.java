@@ -3,23 +3,18 @@ package alquiler.trajes.form;
 import alquiler.trajes.form.config.LookAndFeelForm;
 import alquiler.trajes.form.customer.CustomersForm;
 import alquiler.trajes.form.event.ConsultEventsForm;
-import alquiler.trajes.form.event.EventForm;
+import alquiler.trajes.form.event.NewEvent;
 import alquiler.trajes.form.login.LoginForm;
 import alquiler.trajes.form.user.UsersForm;
+import alquiler.trajes.util.Utility;
 
 public class MainForm extends javax.swing.JFrame {
-
-    private LookAndFeelForm lookAndFeelForm;
-    private UsersForm usersForm;
-    private CustomersForm customersForm;
-    private EventForm eventForm;
-    private ConsultEventsForm consultEventsForm;
 
     public MainForm() {
         initComponents();
         this.setLocationRelativeTo(null);
         this.lblUserSession.setText(LoginForm.userSession.getName() + " " + LoginForm.userSession.getLastName());
-        this.setExtendedState(this.MAXIMIZED_BOTH);
+        this.setExtendedState(MAXIMIZED_BOTH);
     }
 
     /**
@@ -66,6 +61,7 @@ public class MainForm extends javax.swing.JFrame {
         jPanel8 = new javax.swing.JPanel();
         lblUserSession = new javax.swing.JLabel();
         jLabel7 = new javax.swing.JLabel();
+        jLabel8 = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -433,6 +429,8 @@ public class MainForm extends javax.swing.JFrame {
 
         jLabel7.setText("Contacto: gtorreblancaluna@gmail.com. Gerardo Torreblanca Luna");
 
+        jLabel8.setText("version: 2024.06.07");
+
         javax.swing.GroupLayout jPanel8Layout = new javax.swing.GroupLayout(jPanel8);
         jPanel8.setLayout(jPanel8Layout);
         jPanel8Layout.setHorizontalGroup(
@@ -441,14 +439,17 @@ public class MainForm extends javax.swing.JFrame {
                 .addContainerGap()
                 .addComponent(lblUserSession, javax.swing.GroupLayout.PREFERRED_SIZE, 475, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabel7, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jLabel7, javax.swing.GroupLayout.PREFERRED_SIZE, 369, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jLabel8, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addContainerGap())
         );
         jPanel8Layout.setVerticalGroup(
             jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel8Layout.createSequentialGroup()
                 .addGroup(jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(lblUserSession, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(lblUserSession, javax.swing.GroupLayout.DEFAULT_SIZE, 32, Short.MAX_VALUE)
+                    .addComponent(jLabel8, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(jLabel7, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
@@ -497,23 +498,23 @@ public class MainForm extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jbtnLookAndFeelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnLookAndFeelActionPerformed
-        showLookAndFeelForm();
+        Utility.openInternalForm(new LookAndFeelForm()); 
     }//GEN-LAST:event_jbtnLookAndFeelActionPerformed
 
     private void jbtnUsersActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnUsersActionPerformed
-        showUsersForm();
+        Utility.openInternalForm(new UsersForm()); 
     }//GEN-LAST:event_jbtnUsersActionPerformed
 
     private void jbtnCustomersActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnCustomersActionPerformed
-        showCustomersForm();
+        Utility.openInternalForm(new CustomersForm()); 
     }//GEN-LAST:event_jbtnCustomersActionPerformed
 
     private void jbtnAddEventActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnAddEventActionPerformed
-        showEventForm();
+        Utility.openInternalForm(new NewEvent()); 
     }//GEN-LAST:event_jbtnAddEventActionPerformed
 
     private void jbtnConsultEventsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnConsultEventsActionPerformed
-        showConsultEventsForm();
+        Utility.openInternalForm(new ConsultEventsForm());   
     }//GEN-LAST:event_jbtnConsultEventsActionPerformed
 
     /**
@@ -549,43 +550,8 @@ public class MainForm extends javax.swing.JFrame {
                 new MainForm().setVisible(true);
             }
         });
-    }
+    }    
     
-    private void showConsultEventsForm () {
-        consultEventsForm = new ConsultEventsForm();
-        consultEventsForm.setLocation(this.getWidth() / 2 - consultEventsForm.getWidth() / 2, this.getHeight() / 2 - consultEventsForm.getHeight() / 2 - 20);
-        jDesktopPane1.add(consultEventsForm);
-        consultEventsForm.show();
-    }
-    
-    private void showCustomersForm () {
-        customersForm = new CustomersForm();
-        customersForm.setLocation(this.getWidth() / 2 - customersForm.getWidth() / 2, this.getHeight() / 2 - customersForm.getHeight() / 2 - 20);
-        jDesktopPane1.add(customersForm);
-        customersForm.show();
-    }
-    
-    private void showUsersForm () {
-        usersForm = new UsersForm();
-        usersForm.setLocation(this.getWidth() / 2 - usersForm.getWidth() / 2, this.getHeight() / 2 - usersForm.getHeight() / 2 - 20);
-        jDesktopPane1.add(usersForm);
-        usersForm.show();
-    }
-    
-    private void showEventForm () {
-        eventForm = new EventForm(null);
-        eventForm.setLocation(this.getWidth() / 2 - eventForm.getWidth() / 2, this.getHeight() / 2 - eventForm.getHeight() / 2 - 20);
-        jDesktopPane1.add(eventForm);
-        eventForm.show();
-    }
-    
-    private void showLookAndFeelForm () {
-        lookAndFeelForm = new LookAndFeelForm();
-        lookAndFeelForm.setLocation(this.getWidth() / 2 - lookAndFeelForm.getWidth() / 2, this.getHeight() / 2 - lookAndFeelForm.getHeight() / 2 - 20);
-        jDesktopPane1.add(lookAndFeelForm);
-        lookAndFeelForm.show();
-    }
-
     // Variables declaration - do not modify//GEN-BEGIN:variables
     public static javax.swing.JDesktopPane jDesktopPane1;
     private javax.swing.JLabel jLabel1;
@@ -596,6 +562,7 @@ public class MainForm extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel6;
     private javax.swing.JLabel jLabel7;
+    private javax.swing.JLabel jLabel8;
     private javax.swing.JLabel jLabel9;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel11;

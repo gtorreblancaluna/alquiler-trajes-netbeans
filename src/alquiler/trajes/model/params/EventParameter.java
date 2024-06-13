@@ -1,5 +1,6 @@
 package alquiler.trajes.model.params;
 
+import alquiler.trajes.entity.CatalogStatusEvent;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,4 +20,5 @@ public class EventParameter {
     private Long eventId;
     private String description;
     private String limit;
+    private CatalogStatusEvent status;
 }

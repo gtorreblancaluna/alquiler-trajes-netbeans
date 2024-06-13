@@ -60,7 +60,11 @@ public final class EventResultDao extends ResultDao {
         
         if (parameter.getEventId() != null && !parameter.getEventId().equals(0L)) {
             builder.append("AND event.id = ").append(parameter.getEventId()).append(" ");
-        } else {                
+        } else {
+            if (parameter.getStatus() != null && !parameter.getStatus().getId().equals(0L)) {
+                builder.append("AND event.catalog_status_event_id = ")
+                        .append(parameter.getStatus().getId()).append(" ");
+            }
             if (parameter.getInitDeliveryDate() != null && 
                     !parameter.getInitDeliveryDate().isEmpty() && 
                     (parameter.getEndDeliveryDate() == null || parameter.getEndDeliveryDate().isEmpty())
@@ -110,12 +114,11 @@ public final class EventResultDao extends ResultDao {
             }
         }
 
-        builder.append("ORDER BY event.delivery_date ");
+        builder.append("ORDER BY event.delivery_date DESC ");
         builder.append("LIMIT ").append(parameter.getLimit());
         
         Query query = em.createNativeQuery(builder.toString());
-        List<EventResult> list = getResultList(query, EventResult.class);
-        return list;
+        return getResultList(query, EventResult.class);
     }
     
     
