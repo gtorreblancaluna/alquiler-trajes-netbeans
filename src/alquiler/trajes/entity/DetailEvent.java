@@ -1,6 +1,7 @@
 package alquiler.trajes.entity;
 
 import alquiler.trajes.constant.ColumnDefinitionConstant;
+import java.io.Serializable;
 import lombok.*;
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -21,7 +22,7 @@ import javax.persistence.Table;
 @Setter()
 @Getter
 @ToString
-public class DetailEvent {   
+public class DetailEvent implements Serializable {   
 
     public DetailEvent(Long id) {
         this.id = id;

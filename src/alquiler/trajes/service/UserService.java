@@ -25,7 +25,7 @@ public final class UserService {
     
     private static final Logger log = Logger.getLogger(UserService.class.getName());
                 
-    private UserDao userDao = UserDao.getInstance();
+    private final UserDao userDao = UserDao.getInstance();
             
     private static UserService SINGLE_INSTANCE;
         

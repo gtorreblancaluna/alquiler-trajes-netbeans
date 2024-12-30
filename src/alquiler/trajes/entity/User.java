@@ -1,6 +1,7 @@
 package alquiler.trajes.entity;
 
 import alquiler.trajes.constant.ColumnDefinitionConstant;
+import java.io.Serializable;
 import lombok.*;
 import java.util.Date;
 import java.util.HashSet;
@@ -27,7 +28,7 @@ import javax.persistence.Table;
 @Setter()
 @Getter
 @ToString
-public class User {
+public class User implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

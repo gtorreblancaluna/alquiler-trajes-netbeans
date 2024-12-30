@@ -1,6 +1,7 @@
 package alquiler.trajes.entity;
 
 import alquiler.trajes.constant.ColumnDefinitionConstant;
+import java.io.Serializable;
 import lombok.*;
 import java.util.Date;
 import javax.persistence.Column;
@@ -22,7 +23,7 @@ import javax.persistence.Table;
 @Setter()
 @Getter
 @ToString
-public class Payment {
+public class Payment implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

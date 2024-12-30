@@ -1,6 +1,7 @@
 package alquiler.trajes.entity;
 
 import alquiler.trajes.constant.ColumnDefinitionConstant;
+import java.io.Serializable;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -23,7 +24,7 @@ import lombok.Setter;
 @NoArgsConstructor(access = AccessLevel.PACKAGE)
 @Setter(value = AccessLevel.PACKAGE)
 @Getter
-public class Role {
+public class Role implements Serializable {
 
     public Role(String name) {
         this.name = name;

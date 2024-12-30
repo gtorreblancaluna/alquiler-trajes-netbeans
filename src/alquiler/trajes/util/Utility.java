@@ -35,7 +35,7 @@ import javax.swing.table.DefaultTableModel;
 
 
 
-public abstract class Utility {
+public class Utility {
     
     private static final int POSITION_HOUR = 0;
     private static final int POSITION_MINUTE = 1;

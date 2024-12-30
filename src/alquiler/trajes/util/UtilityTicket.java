@@ -1,6 +1,10 @@
 package alquiler.trajes.util;
 
-public abstract class UtilityTicket {
+public class UtilityTicket {
+    
+    private UtilityTicket () {
+        throw new IllegalStateException("UtilityTicket");
+    }
     
     public static String alignRight(String string, int length) {
         return String.format("%1$"+length+ "s", string);

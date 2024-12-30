@@ -10,17 +10,20 @@ import java.net.URISyntaxException;
 import java.util.Properties;
 import org.apache.log4j.Logger;
 
-public abstract class PropertySystemUtil {
+public class PropertySystemUtil {
     
     private static final String NAME_FILE = "/system.properties";
     private static Properties prop=null;
     private static final Logger log = Logger.getLogger(PropertySystemUtil.class.getName());
     
+    private PropertySystemUtil () {
+        throw new IllegalStateException("PropertySystemUtil");
+    }
+    
     public static String get(final PropertyConstant propertyConstant)throws IOException{
         String value;
-        try {
-            InputStream input = new FileInputStream(Utility.getPathLocation()+NAME_FILE);
 
+        try (InputStream input = new FileInputStream(Utility.getPathLocation()+NAME_FILE)) {
             if(prop == null) {
                 prop = new Properties();
             }
@@ -35,32 +38,28 @@ public abstract class PropertySystemUtil {
             log.error(e);
             buildFirstTimeFile();
             value = propertyConstant.getValue();
-        } catch (IOException | URISyntaxException e) {
+        } catch (URISyntaxException | IOException e) {
             log.error(e.getMessage(),e);
             throw new IOException(e);
         }
+        log.info(">>> VALUE: "+value);
         return value;
     }
     
     public static void save(final String key, final String value)throws IOException{
-        FileOutputStream fr;
-      
-       try{
-           fr = new FileOutputStream(Utility.getPathLocation()+NAME_FILE);
-       } catch (URISyntaxException e) {
+        try (FileOutputStream fileOutputStream = new FileOutputStream(Utility.getPathLocation()+NAME_FILE)) {
+            if(prop == null){
+                 prop = new Properties();
+            }
+            // load a properties file
+            // set the properties value
+            prop.setProperty(key, value);      
+            // save properties to project root folder
+            prop.store(fileOutputStream, null);
+       } catch (URISyntaxException | IOException e) {
           log.error(e);
           throw new IOException(e);
        }
-
-        if(prop == null){
-            prop = new Properties();
-        }
-        // load a properties file
-        // set the properties value
-        prop.setProperty(key, value);      
-        // save properties to project root folder
-        prop.store(fr, null);
-        fr.close();
     }
     
     public static void buildFirstTimeFile(){
@@ -73,7 +72,7 @@ public abstract class PropertySystemUtil {
             }catch(IOException e){
                 log.error(e);
             }
-        }        
+        }    
     }
     
 }
