@@ -1,26 +1,18 @@
 package alquiler.trajes.form.event;
 
 import alquiler.trajes.constant.ApplicationConstants;
-import static alquiler.trajes.constant.ApplicationConstants.DATE_FORMAT_FOR_SQL_QUERY;
-import static alquiler.trajes.constant.ApplicationConstants.DATE_LARGE;
-import static alquiler.trajes.constant.ApplicationConstants.DECIMAL_FORMAT;
 import static alquiler.trajes.constant.ApplicationConstants.EMPTY_STRING_TXT_FIELD;
-import static alquiler.trajes.constant.ApplicationConstants.END_DAY_HOUR_MINUTES;
 import static alquiler.trajes.constant.ApplicationConstants.ENTER_KEY;
-import static alquiler.trajes.constant.ApplicationConstants.LOCALE_COUNTRY;
-import static alquiler.trajes.constant.ApplicationConstants.LOCALE_LANGUAGE;
 import static alquiler.trajes.constant.ApplicationConstants.MESSAGE_NUMBER_FORMAT_ERROR;
 import static alquiler.trajes.constant.ApplicationConstants.PATH_NAME_DETAIL_REPORT_A4_HORIZONTAL;
 import static alquiler.trajes.constant.ApplicationConstants.PDF_NAME_DETAIL_REPORT_A4_HORIZONTAL;
 import static alquiler.trajes.constant.ApplicationConstants.SELECT_A_ROW_NECCESSARY;
-import static alquiler.trajes.constant.ApplicationConstants.START_DAY_HOUR_MINUTES;
 import static alquiler.trajes.constant.ApplicationConstants.TITLE_CONSULT_EVENTS_FORM;
 import alquiler.trajes.entity.CatalogStatusEvent;
 import alquiler.trajes.entity.DetailEvent;
 import alquiler.trajes.entity.Event;
 import alquiler.trajes.exceptions.BusinessException;
 import alquiler.trajes.exceptions.InvalidDataException;
-import alquiler.trajes.form.MainForm;
 import alquiler.trajes.model.params.EventParameter;
 import alquiler.trajes.model.params.result.EventResult;
 import alquiler.trajes.service.CatalogStatusEventService;
@@ -28,25 +20,23 @@ import alquiler.trajes.service.DetailEventService;
 import alquiler.trajes.service.EventResultService;
 import alquiler.trajes.service.EventService;
 import alquiler.trajes.service.PaymentService;
-import alquiler.trajes.table.TableConsultEvents;
+import alquiler.trajes.tables.TableConsultEvents;
 import alquiler.trajes.ticket.EventTicket;
 import alquiler.trajes.ticket.TicketTemplate;
 import alquiler.trajes.util.JasperPrintUtil;
 import alquiler.trajes.util.Utility;
+import alquiler.trajes.util.UtilityDate;
+import alquiler.trajes.util.UtilityTable;
 import java.awt.Toolkit;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.text.DecimalFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import javax.print.PrintException;
 import javax.swing.JOptionPane;
 import javax.swing.JTable;
-import javax.swing.table.DefaultTableModel;
-import org.apache.commons.lang3.time.FastDateFormat;
 
 
 public class ConsultEventsForm extends javax.swing.JInternalFrame {
@@ -58,19 +48,15 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
     private final CatalogStatusEventService catalogStatusEventService;
     private final JasperPrintUtil jasperPrintUtil;
     private final PaymentService paymentService;
-    private final FastDateFormat fastDateFormatLarge;
-    private static final DecimalFormat decimalFormat = new DecimalFormat(DECIMAL_FORMAT);
-    private final FastDateFormat fastDateFormatSqlQuery = FastDateFormat.getInstance(DATE_FORMAT_FOR_SQL_QUERY);
+    private final UtilityDate utilityDate;
+    
     private static final org.apache.log4j.Logger log = org.apache.log4j.Logger.getLogger(ConsultEventsForm.class.getName());
-    private final Locale locale;
+
     
     public ConsultEventsForm() {
         initComponents();
         this.setTitle(TITLE_CONSULT_EVENTS_FORM);
         this.setClosable(Boolean.TRUE);
-        
-        
-        
         catalogStatusEventService = CatalogStatusEventService.getInstance();
         eventResultService = EventResultService.getInstance();
         eventService = EventService.getInstance();
@@ -78,13 +64,11 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
         paymentService = PaymentService.getInstance();
         tableConsultEvents = new TableConsultEvents();
         jasperPrintUtil = JasperPrintUtil.getInstance();
-        locale = new Locale(LOCALE_LANGUAGE, LOCALE_COUNTRY);
-        fastDateFormatLarge = FastDateFormat.getInstance(DATE_LARGE,locale);
+        utilityDate = UtilityDate.getInstance();
         initCmbs();
         Utility.addJtableToPane(719, 451, this.panelTable, tableConsultEvents);        
         search(false);
-        addEventListenerToTable();
-        
+        addEventListenerToTable();        
         setResizable(true);
         setIconifiable(true);
         setMaximizable(true);
@@ -216,28 +200,11 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
         
         return 
                 EventParameter.builder()
-                        .initDeliveryDate(
-                                this.dateChooserInitDeliveryDate.getDate() != null ? 
-                                        fastDateFormatSqlQuery.format(
-                                                this.dateChooserInitDeliveryDate.getDate()) + START_DAY_HOUR_MINUTES :
-                                        null
-                                        )
-                        .endDeliveryDate(
-                                this.dateChooserEndDeliveryDate.getDate() != null ? 
-                                        fastDateFormatSqlQuery.format(
-                                                this.dateChooserEndDeliveryDate.getDate()) + END_DAY_HOUR_MINUTES :
-                                        null
-                        ).initReturnDate(
-                                this.dateChooserInitReturnDate.getDate() != null ? 
-                                        fastDateFormatSqlQuery.format(
-                                                this.dateChooserInitReturnDate.getDate()) + START_DAY_HOUR_MINUTES :
-                                        null
-                        ).endReturnDate(
-                                this.dateChooserEndReturnDate.getDate() != null ? 
-                                        fastDateFormatSqlQuery.format(
-                                                this.dateChooserEndReturnDate.getDate()) + END_DAY_HOUR_MINUTES :
-                                        null
-                        ).customerName(txtCustomerName.getText().trim().toLowerCase())
+                        .initDeliveryDate(utilityDate.getStartDateFormatSqlQuery(dateChooserInitDeliveryDate.getDate()))
+                        .endDeliveryDate(utilityDate.getEndDateFormatSqlQuery(this.dateChooserEndDeliveryDate.getDate()))
+                        .initReturnDate(utilityDate.getStartDateFormatSqlQuery(this.dateChooserInitReturnDate.getDate()))
+                        .endReturnDate(utilityDate.getEndDateFormatSqlQuery(this.dateChooserEndReturnDate.getDate()))
+                        .customerName(txtCustomerName.getText().trim().toLowerCase())
                         .status((CatalogStatusEvent)cmbStatus.getModel().getSelectedItem())
                         .eventId(!txtFolio.getText().isEmpty() ? Long.parseLong(txtFolio.getText().trim()) : null)
                         .description(txtDescription.getText())
@@ -250,32 +217,11 @@ public class ConsultEventsForm extends javax.swing.JInternalFrame {
             EventParameter eventParameter = getEventParameterFromInputs();
             if (!check) {
                 // es primera consulta
-                eventParameter.setInitDeliveryDate(
-                        fastDateFormatSqlQuery.format(
-                                                new Date()) + START_DAY_HOUR_MINUTES
-                );
+                eventParameter.setInitDeliveryDate(utilityDate.getStartDateFormatSqlQuery(new Date()));
             }
             List<EventResult> results = eventResultService.getResult(eventParameter);
             
-            tableConsultEvents.format();
-            DefaultTableModel temp = (DefaultTableModel) tableConsultEvents.getModel();
-            for (EventResult result : results) {
-                Object row[] = {
-                    check,
-                    result.getId(),
-                    result.getDescription(),
-                    result.getCustomer(),
-                    result.getCustomerPhones(),
-                    fastDateFormatLarge.format(result.getDeliveryDate()) + " "+ result.getDeliveryHour(),
-                    fastDateFormatLarge.format(result.getReturnDate())+ " " + result.getReturnHour(),
-                    result.getTypeEvent(),
-                    result.getStatusEvent(),
-                    decimalFormat.format(result.getPayments()),
-                    decimalFormat.format(result.getSubTotal()),
-                    decimalFormat.format(result.getSubTotal() - result.getPayments())
-                };
-                temp.addRow(row);
-            }
+            UtilityTable.fillTableEvents(tableConsultEvents,results);
             
             if (results.isEmpty()) {
                 lblInfo.setText("No se obtuvieron resultados.");

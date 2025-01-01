@@ -3,13 +3,16 @@ package alquiler.trajes.util;
 import alquiler.trajes.constant.ApplicationConstants;
 import static alquiler.trajes.constant.ApplicationConstants.MESSAGE_TITLE_DETELE_RECORD_CONFIRM;
 import static alquiler.trajes.constant.ApplicationConstants.SELECT_A_ROW_NECCESSARY;
+import alquiler.trajes.constant.PropertyConstant;
 import alquiler.trajes.constant.RoleEnum;
 import alquiler.trajes.entity.Customer;
 import alquiler.trajes.entity.Role;
+import alquiler.trajes.entity.User;
 import alquiler.trajes.exceptions.BusinessException;
 import alquiler.trajes.exceptions.UnAuthorizedException;
 import alquiler.trajes.form.MainForm;
 import alquiler.trajes.form.login.LoginForm;
+import alquiler.trajes.service.UserService;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -18,16 +21,21 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.text.Normalizer;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JComponent;
 import javax.swing.JInternalFrame;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.KeyStroke;
@@ -41,14 +49,92 @@ public class Utility {
     private static final int POSITION_MINUTE = 1;
     private static final String ZERO_ID_FOR_NEW_ELEMENT = "0";
     
-    private Utility () {}
+    private static final Logger logger = Logger.getLogger(Utility.class.getName());
+    
+    private Utility () {}    
+    
+    // depens on updateSession
+    private static void showForm (JInternalFrame jInternalFrame) {
+        jInternalFrame.setLocation(
+                        MainForm.jDesktopPane1.getWidth() / 2 - jInternalFrame.getWidth() / 2,
+                        MainForm.jDesktopPane1.getHeight() / 2 - jInternalFrame.getHeight() / 2 - 20);
+                    MainForm.jDesktopPane1.add(jInternalFrame);
+                    jInternalFrame.show();
+    }
+    
+    // depens on updateSession
+    private static void checkUserInDatabaseAndUpdateSession (String password)throws BusinessException {
+        
+        UserService userService = UserService.getInstance();
+        Optional<User> existUser = userService.finByPasswd(password);                    
+        LoginForm.userSession = existUser.get();
+        MainForm.lblUserSession.setText(LoginForm.userSession.getName() + " " + LoginForm.userSession.getLastName());
+        try {
+            PropertySystemUtil.save(PropertyConstant.LAST_LOGIN_DATE_TIME.getKey(),LocalDateTime.now().toString());
+        } catch (IOException ioe) {
+            throw new BusinessException(ioe.getMessage(),ioe);
+        }
+    
+    }
+    
+    // depens on updateSession
+    private static boolean sessionHasExpired()throws BusinessException {
+       
+        try {
+            LocalDateTime lastLogin =
+                    LocalDateTime.parse(PropertySystemUtil.get(PropertyConstant.LAST_LOGIN_DATE_TIME));
+            
+            long minutesToRequestNewSession = 
+                    Long.parseLong(PropertySystemUtil.get(PropertyConstant.MINUTES_TO_REQUEST_NEW_SESSION));
+
+            long elapsedTimeInMuntes = lastLogin.until(LocalDateTime.now(), ChronoUnit.MINUTES);
+
+            logger.log(Level.INFO, "Last session elapsed time: {0}",elapsedTimeInMuntes);
+            
+            return elapsedTimeInMuntes > minutesToRequestNewSession;
+        } catch (IOException iOException) {
+            throw new BusinessException(iOException.getMessage(),iOException);
+        }
+    }
+    
+    // use for update session
+    private static void updateSession (JInternalFrame jInternalFrame)throws BusinessException {
+        
+        try {
+            
+            long minutesToRequestNewSession = 
+                    Long.parseLong(PropertySystemUtil.get(PropertyConstant.MINUTES_TO_REQUEST_NEW_SESSION));
+        
+            JPasswordField pf = new JPasswordField();
+            int passwdorConfirmDialog = JOptionPane.showConfirmDialog(null, pf, 
+                    "Renueva tu sesión (Han pasado mas de "+minutesToRequestNewSession+" minutos desde tu última sesión.", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+       
+            if (passwdorConfirmDialog == JOptionPane.OK_OPTION) {
+                String password = new String(pf.getPassword());
+                checkUserInDatabaseAndUpdateSession(password);
+                showForm(jInternalFrame);
+            }
+        
+        } catch (IOException ioe) {
+            throw new BusinessException(ioe.getMessage(),ioe);
+        }
+    }
     
     public static void openInternalForm (JInternalFrame jInternalFrame)  {
-        jInternalFrame.setLocation(
-                MainForm.jDesktopPane1.getWidth() / 2 - jInternalFrame.getWidth() / 2, 
-                MainForm.jDesktopPane1.getHeight() / 2 - jInternalFrame.getHeight() / 2 - 20);
-        MainForm.jDesktopPane1.add(jInternalFrame);
-        jInternalFrame.show();
+        
+        try {
+
+            if (!sessionHasExpired()) {
+                showForm(jInternalFrame);
+            } else {
+                updateSession(jInternalFrame);
+            }
+
+        } catch (BusinessException e) {
+                JOptionPane.showMessageDialog(null, e.getMessage(),
+                  ApplicationConstants.TITLE_MESSAGE_FAIL_LOGIN, JOptionPane.INFORMATION_MESSAGE);
+        }
+
     }
     
     public static String getCustomerTels (final Customer customer) {

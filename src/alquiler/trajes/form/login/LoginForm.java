@@ -9,15 +9,17 @@ import alquiler.trajes.form.MainForm;
 import alquiler.trajes.service.UserService;
 import alquiler.trajes.util.PropertySystemUtil;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
-import org.apache.log4j.Logger;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 import org.jvnet.substance.SubstanceLookAndFeel;
 
 public class LoginForm extends javax.swing.JFrame {
 
-    private static final Logger log = Logger.getLogger(LoginForm.class.getName());
+    private static final Logger logger = Logger.getLogger(LoginForm.class.getName());
     private final UserService userService;
     public static User userSession;
     
@@ -36,7 +38,7 @@ public class LoginForm extends javax.swing.JFrame {
         try{
             SubstanceLookAndFeel.setSkin(PropertySystemUtil.get(PropertyConstant.SYSTEM_THEME));
         }catch(IOException e){
-            log.error(e);
+            logger.log(Level.SEVERE,e.getMessage(),e);
             SubstanceLookAndFeel.setSkin(SubstanceThemeConstant.BUSINESS_SKIN);
             JOptionPane.showMessageDialog(this, e, ApplicationConstants.MESSAGE_UNEXPECTED_ERROR,
                     JOptionPane.ERROR_MESSAGE);
@@ -141,13 +143,15 @@ public class LoginForm extends javax.swing.JFrame {
         try {
             Optional<User> existUser = userService.finByPasswd(passwd);
             userSession = existUser.get();
+            PropertySystemUtil.save(PropertyConstant.LAST_LOGIN_DATE_TIME.getKey(),LocalDateTime.now().toString());
             new MainForm().setVisible(true);
             this.dispose();
         } catch (BusinessException e) {
             JOptionPane.showMessageDialog(this, e.getMessage(),
                   ApplicationConstants.TITLE_MESSAGE_FAIL_LOGIN, JOptionPane.INFORMATION_MESSAGE);
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, ApplicationConstants.MESSAGE_UNEXPECTED_ERROR,
+            logger.log(Level.SEVERE,e.getMessage(),e);
+            JOptionPane.showMessageDialog(this, e.getMessage(),
                   ApplicationConstants.TITLE_MESSAGE_FAIL_LOGIN, JOptionPane.INFORMATION_MESSAGE);
         }
 

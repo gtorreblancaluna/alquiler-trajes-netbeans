@@ -1,4 +1,4 @@
-package alquiler.trajes.table;
+package alquiler.trajes.tables;
 
 import alquiler.trajes.constant.ApplicationConstants;
 import java.awt.Font;

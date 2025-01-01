@@ -8,6 +8,7 @@ public class ApplicationConstants {
     public static final String LOCALE_COUNTRY = "MX";
     
     public static final String DESCRIPTION_FORMAT_24_HRS = " Hrs.";
+    public static final String DATE_PRINT_JASPER = "Fecha de impresión: ";
     public static final String DELETE_CHARS_NUMBER = "$,";
     public static final String EMPTY_STRING_TXT_FIELD = "";
     public static final String START_DAY_HOUR_MINUTES = " 00:01";
@@ -40,7 +41,7 @@ public class ApplicationConstants {
     public static final String SELECT_A_ROW_TO_GENERATE_REPORT = "Selecciona una fila para generar el reporte...";
     public static final String SELECT_A_ROW_NECCESSARY = "Selecciona una fila para continuar...";
     public static final String MISSING_DATA = "Faltan datos.";
-    
+        
     
     public static final String LOGO_EMPRESA = "/logo_empresa.jpg";
         

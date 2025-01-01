@@ -283,7 +283,7 @@
                               <EmptySpace type="separate" max="32767" attributes="0"/>
                               <Group type="103" groupAlignment="0" max="-2" attributes="0">
                                   <Component id="jPanel2" max="32767" attributes="0"/>
-                                  <Component id="jPanel8" pref="239" max="32767" attributes="0"/>
+                                  <Component id="jPanel8" max="32767" attributes="0"/>
                               </Group>
                           </Group>
                       </Group>
@@ -836,7 +836,7 @@
                               <Group type="102" alignment="0" attributes="0">
                                   <EmptySpace type="separate" max="-2" attributes="0"/>
                                   <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                      <Component id="txtReturnHour" pref="56" max="32767" attributes="0"/>
+                                      <Component id="txtReturnHour" max="32767" attributes="0"/>
                                       <Component id="txtDeliveryHour" max="32767" attributes="0"/>
                                   </Group>
                                   <EmptySpace max="-2" attributes="0"/>

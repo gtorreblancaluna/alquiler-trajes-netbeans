@@ -6,7 +6,7 @@ import alquiler.trajes.entity.Customer;
 import alquiler.trajes.exceptions.BusinessException;
 import alquiler.trajes.exceptions.NoDataFoundException;
 import alquiler.trajes.service.CustomerService;
-import alquiler.trajes.table.TableFormatCustomers;
+import alquiler.trajes.tables.TableFormatCustomers;
 import alquiler.trajes.util.Utility;
 import java.util.List;
 import javax.swing.JOptionPane;

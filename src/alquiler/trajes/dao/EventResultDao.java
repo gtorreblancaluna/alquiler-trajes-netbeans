@@ -114,7 +114,7 @@ public final class EventResultDao extends ResultDao {
             }
         }
 
-        builder.append("ORDER BY event.delivery_date DESC ");
+        builder.append("ORDER BY event.delivery_date ");
         builder.append("LIMIT ").append(parameter.getLimit());
         
         Query query = em.createNativeQuery(builder.toString());

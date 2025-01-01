@@ -1,6 +1,7 @@
-package alquiler.trajes.table;
+package alquiler.trajes.tables;
 
 import alquiler.trajes.constant.ApplicationConstants;
+import java.awt.Cursor;
 import java.awt.Font;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +19,7 @@ public class TableConsultEvents extends JTable {
     public TableConsultEvents() {
        
         this.setFont(new Font( ApplicationConstants.ARIAL , Font.PLAIN, 12 ));
+        setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         format();
     }
     

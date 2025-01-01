@@ -12,13 +12,13 @@ import org.apache.log4j.Logger;
 
 public final class CatalogStatusEventService {
     
-    private CatalogStatusEventService(){}
+   private CatalogStatusEventService(){}
     
-    private static final Logger log = Logger.getLogger(CatalogStatusEventService.class.getName());
+   private static final Logger log = Logger.getLogger(CatalogStatusEventService.class.getName());
                 
-    private final CatalogStatusEventDao catalogStatusEventDao = CatalogStatusEventDao.getInstance();
+   private final CatalogStatusEventDao catalogStatusEventDao = CatalogStatusEventDao.getInstance();
             
-    private static CatalogStatusEventService SINGLE_INSTANCE;
+   private static CatalogStatusEventService SINGLE_INSTANCE;
         
    public static synchronized CatalogStatusEventService getInstance() {
         

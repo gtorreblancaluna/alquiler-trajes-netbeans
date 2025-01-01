@@ -53,7 +53,7 @@ public class EditEvent extends EventForm {
                 fillTableDetailFromEvent();
                 total();
             }).start();
-            
+                     
         } catch (BusinessException e) {
            log.error(e);
            JOptionPane.showMessageDialog(this, e.getMessage(), ApplicationConstants.MESSAGE_UNEXPECTED_ERROR, JOptionPane.ERROR_MESSAGE);

@@ -25,9 +25,9 @@ import alquiler.trajes.service.CatalogTypeEventService;
 import alquiler.trajes.service.CustomerService;
 import alquiler.trajes.service.DetailEventService;
 import alquiler.trajes.service.EventService;
-import alquiler.trajes.table.TableFormatDetail;
-import alquiler.trajes.table.TableFormatCustomers;
-import alquiler.trajes.table.TableFormatPayments;
+import alquiler.trajes.tables.TableFormatDetail;
+import alquiler.trajes.tables.TableFormatCustomers;
+import alquiler.trajes.tables.TableFormatPayments;
 import alquiler.trajes.ticket.EventTicket;
 import alquiler.trajes.ticket.TicketTemplate;
 import alquiler.trajes.util.JasperPrintUtil;
@@ -377,24 +377,37 @@ public abstract class EventForm extends javax.swing.JInternalFrame {
         lblFolio.setText(String.valueOf(event.getId()));
         disableForm();
         btnCloneEvent.setEnabled(true);
+        total();
 
     }
     
     protected void total () {
+        
         float detailTotal=0;
         float paymentsTotal=0;
         int countDetail = 0 ;
         int countPayments = 0;
-        for (int i = 0 ; i < tableFormatDetail.getRowCount() ; i++) {
-            tableFormatDetail.setValueAt(++countDetail, i, TableFormatDetail.Column.NUMBER.getNumber());
-            detailTotal += 
-                    Float.parseFloat(
-                            Utility.deleteCharacters(String.valueOf(tableFormatDetail.getValueAt(i, TableFormatDetail.Column.IMPORT.getNumber())),DELETE_CHARS_NUMBER));
+        
+        for (int row = 0 ; row < tableFormatDetail.getRowCount() ; row++) {
+            
+            tableFormatDetail.setValueAt(++countDetail, row, TableFormatDetail.Column.NUMBER.getNumber());
+            
+            Float detailImport = 
+                    Float.valueOf(Utility.deleteCharacters(String.valueOf(tableFormatDetail.getValueAt(row, TableFormatDetail.Column.IMPORT.getNumber())),DELETE_CHARS_NUMBER));
+            
+            String paymentInString = String.valueOf(tableFormatDetail.getValueAt(row, TableFormatDetail.Column.PAYMENT.getNumber()));
+            
+            if (!paymentInString.isEmpty()) {
+                Float payment = Float.valueOf(Utility.deleteCharacters(paymentInString,DELETE_CHARS_NUMBER));
+                tableFormatDetail.setValueAt(detailImport-payment, row, TableFormatDetail.Column.TOTAL.getNumber());
+            }
+            
+            detailTotal += detailImport;
         }
-        for (int i = 0 ; i < tableFormatPayments.getRowCount() ; i++) {
+        for (int row = 0 ; row < tableFormatPayments.getRowCount() ; row++) {
             paymentsTotal += 
                     Float.parseFloat(
-                            Utility.deleteCharacters(String.valueOf(tableFormatPayments.getValueAt(i, TableFormatPayments.Column.IMPORT.getNumber())),DELETE_CHARS_NUMBER));
+                            Utility.deleteCharacters(String.valueOf(tableFormatPayments.getValueAt(row, TableFormatPayments.Column.IMPORT.getNumber())),DELETE_CHARS_NUMBER));
             countPayments++;
         }
         this.lblSubTotal.setText(decimalFormat.format(detailTotal));
@@ -1882,6 +1895,7 @@ public abstract class EventForm extends javax.swing.JInternalFrame {
         try {
             Utility.cloneRowsCheckedTable(tableFormatDetail, TableFormatDetail.Column.BOOLEAN.getNumber(),
                     TableFormatDetail.Column.ID.getNumber());
+            total();
         } catch (BusinessException e) {
             JOptionPane.showMessageDialog(this, 
                     e.getMessage(), MESSAGE_TITLE_ERROR, JOptionPane.WARNING_MESSAGE);

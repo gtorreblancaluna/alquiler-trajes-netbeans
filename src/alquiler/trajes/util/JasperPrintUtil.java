@@ -24,6 +24,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.SQLNonTransientConnectionException;
 import java.text.DecimalFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -84,7 +85,7 @@ public final class JasperPrintUtil {
             
             parameters.put("ID", event.getId().toString());
             parameters.put("FOLIO", event.getId().toString());
-            parameters.put("USER_NAME", event.getUser().getName()+" "+event.getUser().getLastName());
+            parameters.put("USER_NAME", event.getUser().getName());
             parameters.put("CUSTOMER_NAME", event.getCustomer().getName()+" "+event.getCustomer().getLastName());
             parameters.put("TYPE_EVENT", event.getCatalogTypeEvent().getName());
             parameters.put("STATUS_EVENT", event.getCatalogStatusEvent().getName());
@@ -98,6 +99,7 @@ public final class JasperPrintUtil {
             parameters.put("COMPANY_NAME", generalInfoService.getByKey(GeneralInfoEnum.COMPANY_NAME.getKey()));
             parameters.put("INFO_FOOTER_PDF_A5", generalInfoService.getByKey(GeneralInfoEnum.INFO_FOOTER_PDF_A5.getKey()));
             parameters.put("IMPORTANT_INFO", generalInfoService.getByKey(GeneralInfoEnum.IMPORTANT_INFO.getKey()));
+            parameters.put("PRINT_DATE", ApplicationConstants.DATE_PRINT_JASPER+fastDateFormatLarge.format(new Date()));
             
             JasperPrint jasperPrint;
             String locationFile = pathLocation+PATH_NAME_EVENT_REPORT_VERTICAL_A5;

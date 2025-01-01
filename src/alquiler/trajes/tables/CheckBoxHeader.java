@@ -1,4 +1,4 @@
-package alquiler.trajes.table;
+package alquiler.trajes.tables;
 
 import java.awt.Color;
 import java.awt.Component;
