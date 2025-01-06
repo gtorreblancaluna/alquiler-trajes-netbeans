@@ -1,6 +1,7 @@
 package alquiler.trajes.util;
 
 import alquiler.trajes.constant.ApplicationConstants;
+import static alquiler.trajes.constant.ApplicationConstants.DECIMAL_FORMAT;
 import static alquiler.trajes.constant.ApplicationConstants.MESSAGE_TITLE_DETELE_RECORD_CONFIRM;
 import static alquiler.trajes.constant.ApplicationConstants.SELECT_A_ROW_NECCESSARY;
 import alquiler.trajes.constant.PropertyConstant;
@@ -19,6 +20,8 @@ import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.text.Normalizer;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -28,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -52,6 +56,11 @@ public class Utility {
     private static final Logger logger = Logger.getLogger(Utility.class.getName());
     
     private Utility () {}    
+    
+    public static DecimalFormat getDecimalFormat () {
+        return 
+                new DecimalFormat(DECIMAL_FORMAT,DecimalFormatSymbols.getInstance(Locale.forLanguageTag(ApplicationConstants.LANGUAGE_TAG)));
+    }
     
     // depens on updateSession
     private static void showForm (JInternalFrame jInternalFrame) {

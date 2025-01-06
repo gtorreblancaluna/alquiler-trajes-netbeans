@@ -2,7 +2,6 @@ package alquiler.trajes.util;
 
 import alquiler.trajes.constant.ApplicationConstants;
 import static alquiler.trajes.constant.ApplicationConstants.DATE_LARGE;
-import static alquiler.trajes.constant.ApplicationConstants.DECIMAL_FORMAT;
 import static alquiler.trajes.constant.ApplicationConstants.DESCRIPTION_FORMAT_24_HRS;
 import static alquiler.trajes.constant.ApplicationConstants.LOCALE_COUNTRY;
 import static alquiler.trajes.constant.ApplicationConstants.LOCALE_LANGUAGE;
@@ -10,6 +9,7 @@ import static alquiler.trajes.constant.ApplicationConstants.MESSAGE_NOT_FOUND_JA
 import static alquiler.trajes.constant.ApplicationConstants.PATH_NAME_EVENT_REPORT_VERTICAL_A5;
 import static alquiler.trajes.constant.ApplicationConstants.PDF_NAME_EVENT_REPORT_VERTICAL_A5;
 import alquiler.trajes.constant.GeneralInfoEnum;
+import alquiler.trajes.constant.JasperPrintConstants;
 import alquiler.trajes.entity.Event;
 import alquiler.trajes.exceptions.BusinessException;
 import alquiler.trajes.exceptions.DataOriginException;
@@ -22,7 +22,6 @@ import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.sql.SQLNonTransientConnectionException;
 import java.text.DecimalFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -38,13 +37,30 @@ import org.apache.log4j.Logger;
 
 public final class JasperPrintUtil {
     
+    private static final Logger log = Logger.getLogger(JasperPrintUtil.class.getName());
+    private static JasperPrintUtil SINGLE_INSTANCE;
+    private final GeneralInfoService generalInfoService;
+    private final FastDateFormat fastDateFormatLarge;
+    private static final DecimalFormat decimalFormat = Utility.getDecimalFormat();
+    private final Locale locale;
+    private final PaymentService paymentService;
+    private final DetailEventService detailEventService;
+    private final PropertiesService prop;
+    private final String bd;
+    private final String user; 
+    private final String password;
+    private final String url;
+    private final String driver;
+    private Connection connection;
+    
     private JasperPrintUtil(){
+        
         prop = PropertiesService.getInstance();
-        this.bd = prop.getProperty("db.database.name");
-        this.user = prop.getProperty("db.username");
-        this.password = prop.getProperty("db.password");
-        this.url = prop.getProperty("db.url");
-        this.driver = prop.getProperty("db.driver");
+        this.bd = prop.getProperty(ApplicationConstants.DATABASE_NAME_PROPERTY);
+        this.user = prop.getProperty(ApplicationConstants.DATABASE_USERNAME_PROPERTY);
+        this.password = prop.getProperty(ApplicationConstants.DATABASE_PASSWORD_PROPERTY);
+        this.url = prop.getProperty(ApplicationConstants.DATABASE_URL_PROPERTY);
+        this.driver = prop.getProperty(ApplicationConstants.DATABASE_DRIVER_PROPERTY);
         locale = new Locale(LOCALE_LANGUAGE, LOCALE_COUNTRY);
         generalInfoService = GeneralInfoService.getInstance();
         fastDateFormatLarge = FastDateFormat.getInstance(DATE_LARGE,locale);
@@ -52,14 +68,7 @@ public final class JasperPrintUtil {
         detailEventService = DetailEventService.getInstance();
     }
     
-    private static final Logger log = Logger.getLogger(JasperPrintUtil.class.getName());
-    private static JasperPrintUtil SINGLE_INSTANCE;
-    private final GeneralInfoService generalInfoService;
-    private final FastDateFormat fastDateFormatLarge;
-    private static final DecimalFormat decimalFormat = new DecimalFormat(DECIMAL_FORMAT);
-    private final Locale locale;
-    private final PaymentService paymentService;
-    private final DetailEventService detailEventService;
+
         
     public static synchronized JasperPrintUtil getInstance() {
         
@@ -80,33 +89,34 @@ public final class JasperPrintUtil {
             
             String pathLocation = Utility.getPathLocation();
             
-            parameters.put("URL_SUB_REPORT_CONSULTA", pathLocation+"/");
-            parameters.put("URL_IMAGEN",pathLocation+ApplicationConstants.LOGO_EMPRESA );
-            
-            parameters.put("ID", event.getId().toString());
-            parameters.put("FOLIO", event.getId().toString());
-            parameters.put("USER_NAME", event.getUser().getName());
-            parameters.put("CUSTOMER_NAME", event.getCustomer().getName()+" "+event.getCustomer().getLastName());
-            parameters.put("TYPE_EVENT", event.getCatalogTypeEvent().getName());
-            parameters.put("STATUS_EVENT", event.getCatalogStatusEvent().getName());
-            parameters.put("DELIVERY_DATE", fastDateFormatLarge.format(event.getDeliveryDate())+" "+event.getDeliveryHour()+DESCRIPTION_FORMAT_24_HRS);
-            parameters.put("RETURN_DATE", fastDateFormatLarge.format(event.getReturnDate())+" "+event.getReturnHour()+DESCRIPTION_FORMAT_24_HRS);
-            parameters.put("CREATED_AT_DATE", fastDateFormatLarge.format(event.getCreatedAt()));
-            parameters.put("DESCRIPTION", event.getDescription());
-            parameters.put("PAYMENTS", decimalFormat.format(sumPayment));
-            parameters.put("SUBTOTAL", decimalFormat.format(sumDetail));
-            parameters.put("TOTAL", decimalFormat.format(sumDetail-sumPayment));
-            parameters.put("COMPANY_NAME", generalInfoService.getByKey(GeneralInfoEnum.COMPANY_NAME.getKey()));
-            parameters.put("INFO_FOOTER_PDF_A5", generalInfoService.getByKey(GeneralInfoEnum.INFO_FOOTER_PDF_A5.getKey()));
-            parameters.put("IMPORTANT_INFO", generalInfoService.getByKey(GeneralInfoEnum.IMPORTANT_INFO.getKey()));
-            parameters.put("PRINT_DATE", ApplicationConstants.DATE_PRINT_JASPER+fastDateFormatLarge.format(new Date()));
-            
-            JasperPrint jasperPrint;
             String locationFile = pathLocation+PATH_NAME_EVENT_REPORT_VERTICAL_A5;
-            System.out.println("Cargando desde: " + locationFile);
-            if (locationFile == null) {
+            if (locationFile.isBlank()) {
                 throw new JasperPrintUtilException(MESSAGE_NOT_FOUND_JASPER_FILE);
             }
+            
+            parameters.put(JasperPrintConstants.URL_SUB_REPORT_CONSULTA, pathLocation+"/");
+            parameters.put(JasperPrintConstants.URL_IMAGEN,pathLocation+ApplicationConstants.LOGO_EMPRESA );
+            
+            parameters.put(JasperPrintConstants.ID, event.getId().toString());
+            parameters.put(JasperPrintConstants.FOLIO, event.getId().toString());
+            parameters.put(JasperPrintConstants.USER_NAME, event.getUser().getName());
+            parameters.put(JasperPrintConstants.CUSTOMER_NAME, event.getCustomer().getName()+" "+event.getCustomer().getLastName());
+            parameters.put(JasperPrintConstants.TYPE_EVENT, event.getCatalogTypeEvent().getName());
+            parameters.put(JasperPrintConstants.STATUS_EVENT, event.getCatalogStatusEvent().getName());
+            parameters.put(JasperPrintConstants.DELIVERY_DATE, fastDateFormatLarge.format(event.getDeliveryDate())+" "+event.getDeliveryHour()+DESCRIPTION_FORMAT_24_HRS);
+            parameters.put(JasperPrintConstants.RETURN_DATE, fastDateFormatLarge.format(event.getReturnDate())+" "+event.getReturnHour()+DESCRIPTION_FORMAT_24_HRS);
+            parameters.put(JasperPrintConstants.CREATED_AT_DATE, fastDateFormatLarge.format(event.getCreatedAt()));
+            parameters.put(JasperPrintConstants.DESCRIPTION, event.getDescription());
+            parameters.put(JasperPrintConstants.PAYMENTS, decimalFormat.format(sumPayment));
+            parameters.put(JasperPrintConstants.SUBTOTAL, decimalFormat.format(sumDetail));
+            parameters.put(JasperPrintConstants.TOTAL, decimalFormat.format(sumDetail-sumPayment));
+            parameters.put(JasperPrintConstants.COMPANY_NAME, generalInfoService.getByKey(GeneralInfoEnum.COMPANY_NAME.getKey()));
+            parameters.put(JasperPrintConstants.INFO_FOOTER_PDF_A5, generalInfoService.getByKey(GeneralInfoEnum.INFO_FOOTER_PDF_A5.getKey()));
+            parameters.put(JasperPrintConstants.IMPORTANT_INFO, generalInfoService.getByKey(GeneralInfoEnum.IMPORTANT_INFO.getKey()));
+            parameters.put(JasperPrintConstants.PRINT_DATE, ApplicationConstants.DATE_PRINT_JASPER+fastDateFormatLarge.format(new Date()));
+            
+            JasperPrint jasperPrint;
+            
             JasperReport masterReport = (JasperReport) JRLoader.loadObjectFromFile(locationFile);
             jasperPrint = JasperFillManager.fillReport(masterReport, parameters, this.connection);
             JasperExportManager.exportReportToPdfFile(jasperPrint, pathLocation+PDF_NAME_EVENT_REPORT_VERTICAL_A5);
@@ -117,22 +127,24 @@ public final class JasperPrintUtil {
         }
     }
     
-    public void showPDF (
-            final Map<String,Object> parameters,
+    public void showPDF (final Map<String,Object> parameters,
             final String pathJasperReport,
             final String namePDF
             ) throws BusinessException {
         getConnection();
         try {
             String pathLocation = Utility.getPathLocation();
-            parameters.put("URL_SUB_REPORT_CONSULTA", pathLocation+"/");
-            parameters.put("URL_IMAGEN",pathLocation+ApplicationConstants.LOGO_EMPRESA );
+            
+
+            parameters.put(JasperPrintConstants.URL_SUB_REPORT_CONSULTA, pathLocation+"/");
+            parameters.put(JasperPrintConstants.URL_IMAGEN,pathLocation+ApplicationConstants.LOGO_EMPRESA );
             JasperPrint jasperPrint;
             String locationFile = pathLocation+pathJasperReport;
-            System.out.println("Cargando desde: " + locationFile);
-            if (locationFile == null) {
+            
+            if (locationFile.isBlank()) {
                 throw new JasperPrintUtilException(MESSAGE_NOT_FOUND_JASPER_FILE);
             }
+
             JasperReport masterReport = (JasperReport) JRLoader.loadObjectFromFile(locationFile);
             jasperPrint = JasperFillManager.fillReport(masterReport, parameters, this.connection);
             JasperExportManager.exportReportToPdfFile(jasperPrint, pathLocation+namePDF);
@@ -154,31 +166,10 @@ public final class JasperPrintUtil {
             Class.forName(driver);
             //obtenemos la conexión
             connection = DriverManager.getConnection(url, user, password);
-            if (connection != null) {
-                System.out.println("Conexion a base de datos " + bd + ". listo");
-            }
-        
-        } catch (SQLNonTransientConnectionException e) {
-           System.out.println("la conexion se ha cerrado "+e);
-           throw new DataOriginException(e.getMessage(),e);
-        } catch (SQLException e) {
-            System.out.println(e);
-            throw new DataOriginException(e.getMessage(),e);
-
-        } catch (ClassNotFoundException e) {
-            System.out.println(e);
-            throw new DataOriginException(e.getMessage(),e);
-        }catch (Exception e) {
+        }catch (ClassNotFoundException | SQLException e) {
             throw new DataOriginException(e.getMessage(),e);
         }
     }
-    
-    private final PropertiesService prop;
-    private final String bd;
-    private final String user; 
-    private final String password;
-    private final String url;
-    private final String driver;
-    private Connection connection;
+
     
 }

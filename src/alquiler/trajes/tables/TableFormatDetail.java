@@ -46,7 +46,7 @@ public class TableFormatDetail extends JTable {
         
         BOOLEAN(0,10,"",Boolean.class, true),
         ID(1,10,"id",String.class, true),
-        NUMBER(2,10,"#",String.class, true),
+        NUMBER(2,10,"#",String.class, false),
         NAME(3,60,"Nombre",String.class, true),
         ITEMS(4,240,"Conceptos",String.class, true),
         ADJUTS(5,160,"Ajustes",String.class, true),

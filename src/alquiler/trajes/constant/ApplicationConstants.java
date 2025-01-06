@@ -3,9 +3,16 @@ package alquiler.trajes.constant;
 public class ApplicationConstants {
     
     private ApplicationConstants () {}
+    
+    public static final String DATABASE_NAME_PROPERTY = "db.database.name";
+    public static final String DATABASE_USERNAME_PROPERTY = "db.username";
+    public static final String DATABASE_PASSWORD_PROPERTY = "db.password";
+    public static final String DATABASE_URL_PROPERTY = "db.url";
+    public static final String DATABASE_DRIVER_PROPERTY = "db.driver";
        
     public static final String LOCALE_LANGUAGE = "es";
     public static final String LOCALE_COUNTRY = "MX";
+    public static final String LANGUAGE_TAG = "es_MX";
     
     public static final String DESCRIPTION_FORMAT_24_HRS = " Hrs.";
     public static final String DATE_PRINT_JASPER = "Fecha de impresión: ";
@@ -31,6 +38,7 @@ public class ApplicationConstants {
     public static final String KEY_USERS = "generic-user";
     public static final String TITLE_LOGIN_FORM = "Iniciar sesión.";
     public static final String TITLE_USERS_FORM = "Usuarios.";
+    public static final String TITLE_UTILITY_FORM = "Utilidades del sistema.";
     public static final String TITLE_CUSTOMERS_FORM = "Clientes.";
     public static final String TITLE_NEW_EVENT_FORM = "Nuevo evento.";
     public static final String TITLE_EDIT_EVENT_FORM = "Editar evento.";

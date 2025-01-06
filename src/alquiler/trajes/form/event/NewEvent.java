@@ -16,7 +16,11 @@ public class NewEvent extends EventForm {
     public NewEvent() {
         super();
         this.setTitle(ApplicationConstants.TITLE_NEW_EVENT_FORM);
-        
+        init();
+    }
+
+    @Override
+    public final void init() {
         lblInfoUser.setText("Atiende:");
         lblEventCreatedAt.setText(EMPTY_STRING_TXT_FIELD);
         lblSubTotal.setText(EMPTY_STRING_TXT_FIELD);

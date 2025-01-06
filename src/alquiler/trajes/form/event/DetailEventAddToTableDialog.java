@@ -1,5 +1,6 @@
 package alquiler.trajes.form.event;
 
+import alquiler.trajes.constant.ApplicationConstants;
 import static alquiler.trajes.constant.ApplicationConstants.DECIMAL_FORMAT;
 import static alquiler.trajes.constant.ApplicationConstants.ENTER_KEY;
 import static alquiler.trajes.constant.ApplicationConstants.MESSAGE_TITLE_ERROR;
@@ -18,7 +19,8 @@ import javax.swing.JTextField;
 public class DetailEventAddToTableDialog extends javax.swing.JDialog {
     
     private DetailEvent detailToReturn = new DetailEvent();
-    private static final DecimalFormat decimalFormat = new DecimalFormat(DECIMAL_FORMAT);
+    private static final DecimalFormat decimalFormat 
+            = Utility.getDecimalFormat();
 
     public DetailEventAddToTableDialog(java.awt.Frame parent, boolean modal, DetailEvent detail) {
         super(parent, modal);

@@ -9,6 +9,7 @@ import alquiler.trajes.form.event.EditEvent;
 import alquiler.trajes.form.event.NewEvent;
 import alquiler.trajes.form.login.LoginForm;
 import alquiler.trajes.form.user.UsersForm;
+import alquiler.trajes.form.utility.UtilityForm;
 import alquiler.trajes.model.params.EventParameter;
 import alquiler.trajes.model.params.result.EventResult;
 import alquiler.trajes.service.EventResultService;
@@ -19,7 +20,6 @@ import alquiler.trajes.util.UtilityDate;
 import alquiler.trajes.util.UtilityTable;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.IOException;
 import java.time.LocalDate;
 import java.util.Date;
 import java.util.List;
@@ -27,6 +27,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 import javax.swing.JTable;
+import java.io.IOException;
 
 public class MainForm extends javax.swing.JFrame {
     
@@ -54,6 +55,9 @@ public class MainForm extends javax.swing.JFrame {
         try{
             Long plusDays = 
                     Long.valueOf(PropertySystemUtil.get(PropertyConstant.PLUS_DAYS_TO_EVENTS_IN_MAIN_FORM));
+            
+            jLabel11.setText("Próximos eventos. (Mostrando los siguientes "+Integer.valueOf(plusDays.toString())+" días)");
+            
             LocalDate localDate = LocalDate.now().plusDays(plusDays);
             EventParameter eventParameter = new EventParameter();
             eventParameter.setInitDeliveryDate(
@@ -360,12 +364,17 @@ public class MainForm extends javax.swing.JFrame {
 
         jPanel11.setPreferredSize(new java.awt.Dimension(120, 80));
 
-        jbtnGeneralInfo.setIcon(new javax.swing.ImageIcon(getClass().getResource("/alquiler/trajes/img/img32/tienda-32.png"))); // NOI18N
-        jbtnGeneralInfo.setToolTipText("Informacion negocio");
+        jbtnGeneralInfo.setIcon(new javax.swing.ImageIcon(getClass().getResource("/alquiler/trajes/img/img32/settings-32.png"))); // NOI18N
+        jbtnGeneralInfo.setToolTipText("Configuración");
         jbtnGeneralInfo.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        jbtnGeneralInfo.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jbtnGeneralInfoActionPerformed(evt);
+            }
+        });
 
         jLabel9.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabel9.setText("Información negocio");
+        jLabel9.setText("Configuración");
 
         javax.swing.GroupLayout jPanel11Layout = new javax.swing.GroupLayout(jPanel11);
         jPanel11.setLayout(jPanel11Layout);
@@ -496,8 +505,8 @@ public class MainForm extends javax.swing.JFrame {
                 .addGroup(jPanel10Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(panelProxEventos, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(jPanel10Layout.createSequentialGroup()
-                        .addComponent(jLabel11, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel11, javax.swing.GroupLayout.PREFERRED_SIZE, 458, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(jbnUpdate)))
                 .addContainerGap())
         );
@@ -570,7 +579,7 @@ public class MainForm extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jLabel7, javax.swing.GroupLayout.PREFERRED_SIZE, 375, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabel8, javax.swing.GroupLayout.DEFAULT_SIZE, 103, Short.MAX_VALUE)
+                .addComponent(jLabel8, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addContainerGap())
         );
         jPanel8Layout.setVerticalGroup(
@@ -594,7 +603,7 @@ public class MainForm extends javax.swing.JFrame {
             panelFooterLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(panelFooterLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jLabel2, javax.swing.GroupLayout.DEFAULT_SIZE, 70, Short.MAX_VALUE)
+                .addComponent(jLabel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGap(12, 12, 12)
                 .addComponent(jPanel8, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
@@ -688,12 +697,16 @@ public class MainForm extends javax.swing.JFrame {
     }//GEN-LAST:event_jbtnConsultEventsActionPerformed
 
     private void jbnUpdateActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbnUpdateActionPerformed
-        if (jbnUpdate.isEnabled()) {            
+        if (jbnUpdate.isEnabled()) {
             jbnUpdate.setEnabled(false);
-            Utility.setTimeout(() -> jbnUpdate.setEnabled(true), 1200);
+            Utility.setTimeout(() -> jbnUpdate.setEnabled(true), 5000);
             fillTable();
         }
     }//GEN-LAST:event_jbnUpdateActionPerformed
+
+    private void jbtnGeneralInfoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnGeneralInfoActionPerformed
+        Utility.openInternalForm(new UtilityForm()); 
+    }//GEN-LAST:event_jbtnGeneralInfoActionPerformed
 
     /**
      * @param args the command line arguments

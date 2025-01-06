@@ -9,6 +9,7 @@ import alquiler.trajes.exceptions.BusinessException;
 import alquiler.trajes.service.PaymentService;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
 
@@ -16,18 +17,18 @@ import javax.swing.table.DefaultTableModel;
 public class EditEvent extends EventForm {
 
     private final PaymentService paymentService;
-    private Long eventId;
+    private final Long eventId;
     
     public EditEvent(Long eventId) {
         super();
         this.eventId = eventId;
         paymentService = PaymentService.getInstance();
-        this.setTitle(ApplicationConstants.TITLE_EDIT_EVENT_FORM);        
+        this.setTitle(ApplicationConstants.TITLE_EDIT_EVENT_FORM);
         init();
     }
     
-    
-    private void init () {
+    @Override
+    public final void init () {
         
         fillCatalogTypeEventService();
         super.lblInfoUser.setText("Atendió:");
@@ -40,7 +41,6 @@ public class EditEvent extends EventForm {
             lblEventCreatedAt.setText("Fecha de elaboración: "+fastDateFormatLarge.format(this.event.getCreatedAt()));
             tabPaneMain.setSelectedIndex(INDEX_EVENT_PANE);
             disableForm();
-            btnEventAdd.setEnabled(true);
             btnCloneEvent.setEnabled(true);
             lblFolio.setText(String.valueOf(super.event.getId()));
 
@@ -55,7 +55,7 @@ public class EditEvent extends EventForm {
             }).start();
                      
         } catch (BusinessException e) {
-           log.error(e);
+           logger.log(Level.SEVERE,e.getMessage(),e);
            JOptionPane.showMessageDialog(this, e.getMessage(), ApplicationConstants.MESSAGE_UNEXPECTED_ERROR, JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -83,7 +83,7 @@ public class EditEvent extends EventForm {
                 addDetailToTable(detail,null);
             }
         } catch (BusinessException e) {
-            log.error(e);
+            logger.log(Level.SEVERE,e.getMessage(),e);
             JOptionPane.showMessageDialog(this, e.getMessage(), MESSAGE_TITLE_ERROR, JOptionPane.ERROR_MESSAGE); 
         }
     }
@@ -94,7 +94,7 @@ public class EditEvent extends EventForm {
             super.paymentsEvent = paymentService.getAll(this.event.getId());
             fillTablePayments(this.paymentsEvent);
         } catch (BusinessException e) {
-            log.error(e);
+            logger.log(Level.SEVERE,e.getMessage(),e);
             JOptionPane.showMessageDialog(this, e.getMessage(), MESSAGE_TITLE_ERROR, JOptionPane.ERROR_MESSAGE); 
         }
         

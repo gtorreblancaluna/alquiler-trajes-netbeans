@@ -21,7 +21,7 @@ public final class UtilityTable {
     
     private static final Locale locale = new Locale(LOCALE_LANGUAGE, LOCALE_COUNTRY);
     private static final FastDateFormat fastDateFormatLarge = FastDateFormat.getInstance(DATE_LARGE,locale);
-    private static final DecimalFormat decimalFormat = new DecimalFormat(DECIMAL_FORMAT);
+    private static final DecimalFormat decimalFormat = Utility.getDecimalFormat();
     
     
     public static void fillTableEvents (
