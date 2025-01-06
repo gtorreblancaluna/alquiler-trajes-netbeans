@@ -554,7 +554,7 @@ public class MainForm extends javax.swing.JFrame {
 
         jLabel7.setText("Contacto: gtorreblancaluna@gmail.com. Gerardo Torreblanca Luna");
 
-        jLabel8.setText("version: 2024.06.07");
+        jLabel8.setText("version: 2025.01.06");
 
         javax.swing.GroupLayout jPanel5Layout = new javax.swing.GroupLayout(jPanel5);
         jPanel5.setLayout(jPanel5Layout);

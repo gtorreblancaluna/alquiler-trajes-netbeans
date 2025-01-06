@@ -30,7 +30,6 @@ public class EditEvent extends EventForm {
     @Override
     public final void init () {
         
-        fillCatalogTypeEventService();
         super.lblInfoUser.setText("Atendió:");
         try {
             super.event = eventService.findById(eventId);

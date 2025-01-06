@@ -154,9 +154,11 @@ public abstract class EventForm extends javax.swing.JInternalFrame {
         try{
             calculateReturnDate = 
                     Boolean.parseBoolean(PropertySystemUtil.get(PropertyConstant.CALCULATE_RETURN_DATE));
-        } catch (IOException iooException) {
-            logger.log(Level.SEVERE,iooException.getMessage(),iooException);
+        } catch (IOException ioException) {
+            logger.log(Level.SEVERE,ioException.getMessage(),ioException);
         }
+        
+        fillCatalogTypeEventService();
 
     }
     
@@ -226,7 +228,7 @@ public abstract class EventForm extends javax.swing.JInternalFrame {
     private void getEventDateFromInputs () throws InvalidDataException{
         
         if (!Utility.validateHour(txtDeliveryHour.getText())) {
-            throw new InvalidDataException("Ingresa una hora de entrega valida.");
+            throw new InvalidDataException("Ingresa una hora de entrega válida.");
         }        
         
         String[] deliveryHour = txtDeliveryHour.getText().split(REGEX_SPLIT_HOUR);
@@ -431,21 +433,15 @@ public abstract class EventForm extends javax.swing.JInternalFrame {
         jTabbedPane1.setTitleAt(1, "Abonos("+countPayments+")");
     }
     
-    protected void fillCatalogTypeEventService () {
-        if (types.isEmpty()) {
-            try {
-                types = catalogTypeEventService.getAll();
-            } catch (BusinessException e) {
-                JOptionPane.showMessageDialog(this, e, MESSAGE_TITLE_ERROR, JOptionPane.ERROR_MESSAGE);  
-            }
+    private void fillCatalogTypeEventService () {
+       
+        try {
+            types = catalogTypeEventService.getAll();
+            status = catalogStatusEventService.getAll();
+        } catch (BusinessException e) {
+            JOptionPane.showMessageDialog(this, e, MESSAGE_TITLE_ERROR, JOptionPane.ERROR_MESSAGE);  
         }
-        if (status.isEmpty()) {
-            try {
-                status = catalogStatusEventService.getAll();
-            } catch (BusinessException e) {
-                JOptionPane.showMessageDialog(this, e, MESSAGE_TITLE_ERROR, JOptionPane.ERROR_MESSAGE);  
-            }
-        }
+        
         cmbCatalogType.removeAllItems();
         types.stream().forEach(t -> {
             cmbCatalogType.addItem(t);
@@ -526,7 +522,6 @@ public abstract class EventForm extends javax.swing.JInternalFrame {
                     cleanCustomerInputs();
                     String subrayarLabelCustomer = "<html><u>"+opCustomer.get().getName()+" "+opCustomer.get().getLastName()+"</u></html>";            
                     lblCustomer.setText(subrayarLabelCustomer);
-                    fillCatalogTypeEventService();
 
                 }
                 

@@ -8,8 +8,8 @@ import static alquiler.trajes.constant.ApplicationConstants.LOCALE_LANGUAGE;
 import static alquiler.trajes.constant.ApplicationConstants.MESSAGE_NOT_FOUND_JASPER_FILE;
 import static alquiler.trajes.constant.ApplicationConstants.PATH_NAME_EVENT_REPORT_VERTICAL_A5;
 import static alquiler.trajes.constant.ApplicationConstants.PDF_NAME_EVENT_REPORT_VERTICAL_A5;
-import alquiler.trajes.constant.GeneralInfoEnum;
 import alquiler.trajes.constant.JasperPrintConstants;
+import alquiler.trajes.constant.PropertyConstant;
 import alquiler.trajes.entity.Event;
 import alquiler.trajes.exceptions.BusinessException;
 import alquiler.trajes.exceptions.DataOriginException;
@@ -19,6 +19,8 @@ import alquiler.trajes.service.GeneralInfoService;
 import alquiler.trajes.service.PaymentService;
 import java.awt.Desktop;
 import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -27,6 +29,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JasperExportManager;
 import net.sf.jasperreports.engine.JasperFillManager;
 import net.sf.jasperreports.engine.JasperPrint;
@@ -39,7 +42,6 @@ public final class JasperPrintUtil {
     
     private static final Logger log = Logger.getLogger(JasperPrintUtil.class.getName());
     private static JasperPrintUtil SINGLE_INSTANCE;
-    private final GeneralInfoService generalInfoService;
     private final FastDateFormat fastDateFormatLarge;
     private static final DecimalFormat decimalFormat = Utility.getDecimalFormat();
     private final Locale locale;
@@ -62,7 +64,6 @@ public final class JasperPrintUtil {
         this.url = prop.getProperty(ApplicationConstants.DATABASE_URL_PROPERTY);
         this.driver = prop.getProperty(ApplicationConstants.DATABASE_DRIVER_PROPERTY);
         locale = new Locale(LOCALE_LANGUAGE, LOCALE_COUNTRY);
-        generalInfoService = GeneralInfoService.getInstance();
         fastDateFormatLarge = FastDateFormat.getInstance(DATE_LARGE,locale);
         paymentService = PaymentService.getInstance();
         detailEventService = DetailEventService.getInstance();
@@ -110,19 +111,17 @@ public final class JasperPrintUtil {
             parameters.put(JasperPrintConstants.PAYMENTS, decimalFormat.format(sumPayment));
             parameters.put(JasperPrintConstants.SUBTOTAL, decimalFormat.format(sumDetail));
             parameters.put(JasperPrintConstants.TOTAL, decimalFormat.format(sumDetail-sumPayment));
-            parameters.put(JasperPrintConstants.COMPANY_NAME, generalInfoService.getByKey(GeneralInfoEnum.COMPANY_NAME.getKey()));
-            parameters.put(JasperPrintConstants.INFO_FOOTER_PDF_A5, generalInfoService.getByKey(GeneralInfoEnum.INFO_FOOTER_PDF_A5.getKey()));
-            parameters.put(JasperPrintConstants.IMPORTANT_INFO, generalInfoService.getByKey(GeneralInfoEnum.IMPORTANT_INFO.getKey()));
+            parameters.put(JasperPrintConstants.COMPANY_NAME, PropertySystemUtil.get(PropertyConstant.COMPANY_NAME_PDF_A5));
+            parameters.put(JasperPrintConstants.INFO_FOOTER_PDF_A5, PropertySystemUtil.get(PropertyConstant.INFO_FOOTER_PDF_A5));
+            parameters.put(JasperPrintConstants.IMPORTANT_INFO, PropertySystemUtil.get(PropertyConstant.IMPORTANT_INFO_PDF_A5));
             parameters.put(JasperPrintConstants.PRINT_DATE, ApplicationConstants.DATE_PRINT_JASPER+fastDateFormatLarge.format(new Date()));
-            
-            JasperPrint jasperPrint;
-            
+                        
             JasperReport masterReport = (JasperReport) JRLoader.loadObjectFromFile(locationFile);
-            jasperPrint = JasperFillManager.fillReport(masterReport, parameters, this.connection);
+            JasperPrint jasperPrint = JasperFillManager.fillReport(masterReport, parameters, this.connection);
             JasperExportManager.exportReportToPdfFile(jasperPrint, pathLocation+PDF_NAME_EVENT_REPORT_VERTICAL_A5);
             File file = new File(pathLocation+PDF_NAME_EVENT_REPORT_VERTICAL_A5);
             Desktop.getDesktop().open(file);
-        } catch (Exception e) {
+        } catch (BusinessException | IOException | URISyntaxException | JRException e) {
             throw new JasperPrintUtilException(e.getMessage(),e);
         }
     }

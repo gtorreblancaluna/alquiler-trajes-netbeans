@@ -94,9 +94,23 @@ public final class EventResultDao extends ResultDao {
                     ) {
                // entre fecha de devolucion
                 builder.append("AND event.return_date BETWEEN '")
-                        .append(parameter.getInitReturnDate())
+                        .append(parameter.getInitReturnDate()).append("' ")
                         .append(" AND '")
                         .append(parameter.getEndReturnDate()).append("' ")
+                        ;
+
+            }
+            
+            if (parameter.getInitActivityDate()!= null && 
+                    !parameter.getInitActivityDate().isEmpty() && 
+                    parameter.getEndActivityDate() != null &&
+                    !parameter.getEndActivityDate().isEmpty()                
+                    ) {
+               // entre fecha de actividad
+                builder.append("AND event.created_at BETWEEN '")
+                        .append(parameter.getInitActivityDate()).append("' ")
+                        .append(" AND '")
+                        .append(parameter.getEndActivityDate()).append("' ")
                         ;
 
             }

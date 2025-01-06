@@ -12,6 +12,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class EventParameter {
     
+    private String initActivityDate;
+    private String endActivityDate;
     private String initDeliveryDate;
     private String endDeliveryDate;
     private String initReturnDate;

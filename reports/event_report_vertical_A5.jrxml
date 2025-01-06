@@ -29,7 +29,9 @@
             d.unit_price,
             d.advance_payment
             FROM detail_event d
-            WHERE d.event_id = $P{ID};]]>
+            WHERE d.event_id = $P{ID}
+            ORDER BY d.name_of_aggregate
+]]>
 	</queryString>
 	<field name="name_of_aggregate" class="java.lang.String"/>
 	<field name="items" class="java.lang.String"/>

@@ -3,9 +3,11 @@ package alquiler.trajes.form.utility;
 
 import alquiler.trajes.constant.ApplicationConstants;
 import alquiler.trajes.constant.PropertyConstant;
+import alquiler.trajes.exceptions.BusinessException;
+import alquiler.trajes.exceptions.InvalidDataException;
 import alquiler.trajes.util.PropertySystemUtil;
+import alquiler.trajes.util.Utility;
 import java.io.IOException;
-import java.text.ParseException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
@@ -23,6 +25,7 @@ public class UtilityForm extends javax.swing.JInternalFrame {
     private void init () {
         
         disableForm();
+        disableFormPDF();
         
         try {
             Long plusDays = 
@@ -36,8 +39,25 @@ public class UtilityForm extends javax.swing.JInternalFrame {
             
             Boolean calculateReturnDate = 
                     Boolean.valueOf(PropertySystemUtil.get(PropertyConstant.CALCULATE_RETURN_DATE));
-            checkCalculateReturnDate.setSelected(calculateReturnDate);           
+            checkCalculateReturnDate.setSelected(calculateReturnDate);
             
+            String returnHourDefault = 
+                    PropertySystemUtil.get(PropertyConstant.RETURN_HOUR_EVENT_FORM_DEFAULT);
+            
+            txtReturnHour.setText(returnHourDefault);
+            
+            String companyNamePDF = 
+                    PropertySystemUtil.get(PropertyConstant.COMPANY_NAME_PDF_A5);
+            
+            txtCompanyNamePDF.setText(companyNamePDF);
+            
+            String infoFooterPDF = 
+                    PropertySystemUtil.get(PropertyConstant.INFO_FOOTER_PDF_A5);
+            txtFooterInfoPDF.setText(infoFooterPDF);
+            
+            String importantInfoPDF = 
+                    PropertySystemUtil.get(PropertyConstant.IMPORTANT_INFO_PDF_A5);
+            txtImportantInfoPDF.setText(importantInfoPDF);
             
          } catch(IOException e){
             logger.log(Level.SEVERE,e.getMessage(),e);           
@@ -51,13 +71,30 @@ public class UtilityForm extends javax.swing.JInternalFrame {
         txtMinutesToRequestNewSession.setEnabled(false);
         txtPlusDaysToEventsInMainForm.setEnabled(false);
         checkCalculateReturnDate.setEnabled(false);
+        txtReturnHour.setEnabled(false);
         jbtnSave.setEnabled(false);
+
+    }
+    
+    private void disableFormPDF () {
+        txtCompanyNamePDF.setEnabled(false);
+        txtFooterInfoPDF.setEnabled(false);
+        txtImportantInfoPDF.setEnabled(false);
+        jbtnSavePDF.setEnabled(false);
+    }
+    
+    private void enableFormPDF () {
+        txtCompanyNamePDF.setEnabled(true);
+        txtFooterInfoPDF.setEnabled(true);
+        txtImportantInfoPDF.setEnabled(true);
+        jbtnSavePDF.setEnabled(true);
     }
     
     private void enableForm () {
         txtMinutesToRequestNewSession.setEnabled(true);
         txtPlusDaysToEventsInMainForm.setEnabled(true);
         checkCalculateReturnDate.setEnabled(true);
+        txtReturnHour.setEnabled(true);
         jbtnSave.setEnabled(true);
     }
 
@@ -79,8 +116,19 @@ public class UtilityForm extends javax.swing.JInternalFrame {
         txtPlusDaysToEventsInMainForm = new javax.swing.JTextField();
         jLabel3 = new javax.swing.JLabel();
         checkCalculateReturnDate = new javax.swing.JCheckBox();
+        jLabel4 = new javax.swing.JLabel();
+        txtReturnHour = new javax.swing.JFormattedTextField();
         jbtnEdit = new javax.swing.JButton();
         jbtnSave = new javax.swing.JButton();
+        jPanel3 = new javax.swing.JPanel();
+        jbtnEditPDF = new javax.swing.JButton();
+        jbtnSavePDF = new javax.swing.JButton();
+        jLabel5 = new javax.swing.JLabel();
+        txtCompanyNamePDF = new javax.swing.JTextField();
+        jLabel6 = new javax.swing.JLabel();
+        txtFooterInfoPDF = new javax.swing.JTextField();
+        jLabel7 = new javax.swing.JLabel();
+        txtImportantInfoPDF = new javax.swing.JTextField();
 
         jLabel1.setText("Tiempo para volver a solicitar contraseña (minutos):");
 
@@ -88,44 +136,13 @@ public class UtilityForm extends javax.swing.JInternalFrame {
 
         jLabel3.setText("¿Calcular fecha de devolución en la ventana de eventos?");
 
-        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
-        jPanel2.setLayout(jPanel2Layout);
-        jPanel2Layout.setHorizontalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel2Layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                    .addComponent(jLabel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jLabel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(txtMinutesToRequestNewSession, javax.swing.GroupLayout.DEFAULT_SIZE, 197, Short.MAX_VALUE)
-                    .addComponent(txtPlusDaysToEventsInMainForm)
-                    .addComponent(checkCalculateReturnDate, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addContainerGap(235, Short.MAX_VALUE))
-        );
-        jPanel2Layout.setVerticalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel2Layout.createSequentialGroup()
-                .addGap(13, 13, 13)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel1)
-                    .addComponent(txtMinutesToRequestNewSession, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addComponent(jLabel2)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jLabel3))
-                    .addGroup(jPanel2Layout.createSequentialGroup()
-                        .addComponent(txtPlusDaysToEventsInMainForm, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(checkCalculateReturnDate)))
-                .addContainerGap(56, Short.MAX_VALUE))
-        );
+        jLabel4.setText("Hora de regreso por default al agregar nuevo evento.");
 
-        jTabbedPane1.addTab("General", jPanel2);
+        try {
+            txtReturnHour.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.MaskFormatter("##:##")));
+        } catch (java.text.ParseException ex) {
+            ex.printStackTrace();
+        }
 
         jbtnEdit.setText("Editar");
         jbtnEdit.addActionListener(new java.awt.event.ActionListener() {
@@ -141,31 +158,140 @@ public class UtilityForm extends javax.swing.JInternalFrame {
             }
         });
 
+        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
+        jPanel2.setLayout(jPanel2Layout);
+        jPanel2Layout.setHorizontalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel2Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                    .addComponent(jLabel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jLabel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jLabel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                        .addComponent(txtMinutesToRequestNewSession, javax.swing.GroupLayout.DEFAULT_SIZE, 197, Short.MAX_VALUE)
+                        .addComponent(txtPlusDaysToEventsInMainForm)
+                        .addComponent(txtReturnHour, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(checkCalculateReturnDate, javax.swing.GroupLayout.PREFERRED_SIZE, 123, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(235, Short.MAX_VALUE))
+            .addGroup(jPanel2Layout.createSequentialGroup()
+                .addComponent(jbtnEdit)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jbtnSave)
+                .addGap(0, 0, Short.MAX_VALUE))
+        );
+        jPanel2Layout.setVerticalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel2Layout.createSequentialGroup()
+                .addGap(13, 13, 13)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel1)
+                    .addComponent(txtMinutesToRequestNewSession, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addComponent(jLabel2)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 22, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(txtReturnHour, javax.swing.GroupLayout.PREFERRED_SIZE, 22, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jLabel4)))
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addComponent(txtPlusDaysToEventsInMainForm, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(checkCalculateReturnDate)))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jbtnEdit)
+                    .addComponent(jbtnSave)))
+        );
+
+        jTabbedPane1.addTab("General", jPanel2);
+
+        jbtnEditPDF.setText("Editar");
+        jbtnEditPDF.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jbtnEditPDFActionPerformed(evt);
+            }
+        });
+
+        jbtnSavePDF.setText("Guardar");
+        jbtnSavePDF.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jbtnSavePDFActionPerformed(evt);
+            }
+        });
+
+        jLabel5.setText("Nombre de la empresa:");
+
+        jLabel6.setText("Información del footer:");
+
+        jLabel7.setText("Información imprtante:");
+
+        javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
+        jPanel3.setLayout(jPanel3Layout);
+        jPanel3Layout.setHorizontalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(txtCompanyNamePDF)
+                    .addComponent(txtFooterInfoPDF)
+                    .addComponent(txtImportantInfoPDF)
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel3Layout.createSequentialGroup()
+                                .addComponent(jbtnEditPDF)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jbtnSavePDF))
+                            .addComponent(jLabel5)
+                            .addComponent(jLabel6)
+                            .addComponent(jLabel7))
+                        .addGap(0, 658, Short.MAX_VALUE)))
+                .addContainerGap())
+        );
+        jPanel3Layout.setVerticalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jLabel5)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(txtCompanyNamePDF, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jLabel6)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(txtFooterInfoPDF, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jLabel7)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(txtImportantInfoPDF, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 173, Short.MAX_VALUE)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jbtnEditPDF)
+                    .addComponent(jbtnSavePDF)))
+        );
+
+        jTabbedPane1.addTab("Datos de impresion PDF ", jPanel3);
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jTabbedPane1)
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(jbtnEdit)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jbtnSave)
-                        .addGap(0, 0, Short.MAX_VALUE)))
+                .addComponent(jTabbedPane1)
                 .addContainerGap())
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel1Layout.createSequentialGroup()
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(jTabbedPane1)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jbtnEdit)
-                    .addComponent(jbtnSave))
-                .addGap(179, 179, 179))
+                .addContainerGap())
         );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -189,6 +315,10 @@ public class UtilityForm extends javax.swing.JInternalFrame {
 
     private void jbtnSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnSaveActionPerformed
        try {
+           
+           if (!Utility.validateHour(txtReturnHour.getText())) {
+                throw new InvalidDataException("Ingresa una hora valida.");
+           } 
             
            Long plusDays = Long.valueOf(txtPlusDaysToEventsInMainForm.getText().trim());
            Integer minutesToRequestNewSession = Integer.valueOf(txtMinutesToRequestNewSession.getText().trim());
@@ -201,7 +331,16 @@ public class UtilityForm extends javax.swing.JInternalFrame {
            PropertySystemUtil
                    .save(PropertyConstant.CALCULATE_RETURN_DATE.getKey(),String.valueOf(calculateReturnDate)); 
            
+           PropertySystemUtil
+                   .save(PropertyConstant.RETURN_HOUR_EVENT_FORM_DEFAULT.getKey(),String.valueOf(txtReturnHour.getText())); 
+           
            this.disableForm();
+           
+        } catch (BusinessException businessException) {
+           JOptionPane.showMessageDialog(
+                   this, businessException.getMessage(),
+                   ApplicationConstants.MESSAGE_TITLE_ERROR,
+                   JOptionPane.ERROR_MESSAGE);
            
        } catch (NumberFormatException numberFormatException) {
            JOptionPane.showMessageDialog(
@@ -210,8 +349,8 @@ public class UtilityForm extends javax.swing.JInternalFrame {
                    JOptionPane.ERROR_MESSAGE);
        } catch (IOException ioe) {
            JOptionPane.showMessageDialog(
-                   this, ApplicationConstants.MESSAGE_TITLE_ERROR,
-                   ioe.getMessage(),
+                   this,ioe.getMessage(),
+                   ApplicationConstants.MESSAGE_TITLE_ERROR,
                    JOptionPane.ERROR_MESSAGE);
        }
     }//GEN-LAST:event_jbtnSaveActionPerformed
@@ -220,18 +359,58 @@ public class UtilityForm extends javax.swing.JInternalFrame {
         enableForm();
     }//GEN-LAST:event_jbtnEditActionPerformed
 
+    private void jbtnEditPDFActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnEditPDFActionPerformed
+        enableFormPDF();
+    }//GEN-LAST:event_jbtnEditPDFActionPerformed
+
+    private void jbtnSavePDFActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jbtnSavePDFActionPerformed
+        try {
+            String importantInfo = txtImportantInfoPDF.getText().trim();
+            String footer = txtFooterInfoPDF.getText().trim();
+            String companyName = txtCompanyNamePDF.getText().trim();
+            
+            PropertySystemUtil
+                   .save(PropertyConstant.COMPANY_NAME_PDF_A5.getKey(),String.valueOf(companyName));
+            
+            PropertySystemUtil
+                   .save(PropertyConstant.INFO_FOOTER_PDF_A5.getKey(),String.valueOf(footer));
+            
+            PropertySystemUtil
+                   .save(PropertyConstant.IMPORTANT_INFO_PDF_A5.getKey(),String.valueOf(importantInfo));
+
+            disableFormPDF();
+            
+        } catch (IOException ioe) {
+           JOptionPane.showMessageDialog(
+                   this,ioe.getMessage(),
+                   ApplicationConstants.MESSAGE_TITLE_ERROR,
+                   JOptionPane.ERROR_MESSAGE);
+       }
+    }//GEN-LAST:event_jbtnSavePDFActionPerformed
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JCheckBox checkCalculateReturnDate;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JLabel jLabel7;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
+    private javax.swing.JPanel jPanel3;
     private javax.swing.JTabbedPane jTabbedPane1;
     private javax.swing.JButton jbtnEdit;
+    private javax.swing.JButton jbtnEditPDF;
     private javax.swing.JButton jbtnSave;
+    private javax.swing.JButton jbtnSavePDF;
+    private javax.swing.JTextField txtCompanyNamePDF;
+    private javax.swing.JTextField txtFooterInfoPDF;
+    private javax.swing.JTextField txtImportantInfoPDF;
     private javax.swing.JTextField txtMinutesToRequestNewSession;
     private javax.swing.JTextField txtPlusDaysToEventsInMainForm;
+    protected javax.swing.JFormattedTextField txtReturnHour;
     // End of variables declaration//GEN-END:variables
 }

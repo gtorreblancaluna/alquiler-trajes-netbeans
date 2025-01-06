@@ -809,7 +809,7 @@
                     </Component>
                     <Component class="javax.swing.JLabel" name="jLabel8">
                       <Properties>
-                        <Property name="text" type="java.lang.String" value="version: 2024.06.07"/>
+                        <Property name="text" type="java.lang.String" value="version: 2025.01.06"/>
                       </Properties>
                     </Component>
                     <Container class="javax.swing.JPanel" name="jPanel5">
