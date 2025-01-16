@@ -15,7 +15,6 @@ import alquiler.trajes.exceptions.BusinessException;
 import alquiler.trajes.exceptions.DataOriginException;
 import alquiler.trajes.exceptions.JasperPrintUtilException;
 import alquiler.trajes.service.DetailEventService;
-import alquiler.trajes.service.GeneralInfoService;
 import alquiler.trajes.service.PaymentService;
 import java.awt.Desktop;
 import java.io.File;

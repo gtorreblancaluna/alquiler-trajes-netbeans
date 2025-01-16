@@ -4,6 +4,8 @@ public class ApplicationConstants {
     
     private ApplicationConstants () {}
     
+    public static final String DATE_VALUE_CHOOSER = "date";
+    
     public static final String DATABASE_NAME_PROPERTY = "db.database.name";
     public static final String DATABASE_USERNAME_PROPERTY = "db.username";
     public static final String DATABASE_PASSWORD_PROPERTY = "db.password";

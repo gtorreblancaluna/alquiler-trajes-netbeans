@@ -74,7 +74,7 @@ public abstract class EventForm extends javax.swing.JInternalFrame {
     protected final TableFormatDetail tableFormatDetail;
     protected final TableFormatPayments tableFormatPayments;
     private List<Customer> customers;
-    private static final String DATE_VALUE_CHOOSER = "date";
+    
     private final CatalogTypeEventService catalogTypeEventService;
     private final CatalogStatusEventService catalogStatusEventService;
     protected final EventService eventService;
@@ -100,6 +100,8 @@ public abstract class EventForm extends javax.swing.JInternalFrame {
         locale = new Locale(LOCALE_LANGUAGE, LOCALE_COUNTRY);
         fastDateFormatMedium = FastDateFormat.getInstance(ApplicationConstants.DATE_MEDIUM,locale);
         fastDateFormatLarge = FastDateFormat.getInstance(DATE_LARGE,locale);
+        dateChooserDeliveryDate.setLocale(locale);
+        dateChooserReturnDate.setLocale(locale);
         
         this.customerService = CustomerService.getInstance();
         catalogTypeEventService = CatalogTypeEventService.getInstance();
@@ -459,7 +461,7 @@ public abstract class EventForm extends javax.swing.JInternalFrame {
     
     private void addActionListenerToDateChoosers () {
         dateChooserDeliveryDate.getDateEditor().addPropertyChangeListener((PropertyChangeEvent e) -> {
-            if (DATE_VALUE_CHOOSER.equals(e.getPropertyName())) {
+            if (ApplicationConstants.DATE_VALUE_CHOOSER.equals(e.getPropertyName())) {
                 
                 Date deliveryDate = dateChooserDeliveryDate.getDate();                
                 
@@ -477,7 +479,7 @@ public abstract class EventForm extends javax.swing.JInternalFrame {
             }
         });
         dateChooserReturnDate.getDateEditor().addPropertyChangeListener((PropertyChangeEvent e) -> {
-            if (DATE_VALUE_CHOOSER.equals(e.getPropertyName())) {
+            if (ApplicationConstants.DATE_VALUE_CHOOSER.equals(e.getPropertyName())) {
                 txtReturnHour.requestFocus();
             }
         });
